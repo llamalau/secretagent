@@ -35,3 +35,11 @@ def translate_structured(english_sentence: str) -> FrenchEnglishTranslation:
 if __name__ == '__main__':
     print(translate("What's for lunch today?"))
     print(translate_structured("What's for lunch today?"))
+
+    translate.implement_via(
+        'prompt_llm',
+        prompt_template_str='Translate $english_sentence to German - just return one sentence.',
+        llm={'model': 'claude-haiku-4-5-20251001'})
+
+    print(translate("What's for lunch today?"))
+    

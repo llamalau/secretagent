@@ -6,7 +6,7 @@ cachier:
 
 evaluate:
   result_dir: results
-  expt_name: pot
+  expt_name: workflow
 
 dataset:
   split: valid
@@ -20,4 +20,4 @@ ptools:
   consistent_sports:
     method: simulate
   sports_understanding:
-    method: program_of_thought
+    method: direct
