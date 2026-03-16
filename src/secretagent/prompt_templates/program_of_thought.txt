@@ -17,14 +17,17 @@ $func_name was called with these arguments:
 
 $input_args
 
-Output Python code that would compute the output of
-$func_name, by calling the tools, FOR THESE INPUTS.
-The code MUST call final_answer(result) as the last
-line to return the result.
+Output Python code that would compute the output of $func_name, by
+calling the tools, FOR THESE INPUTS.  The code MUST call
+final_answer(result) as the last line to return the result.  Start the
+code block by initializing a variable for each input.  It is ESSENTIAL
+that the code is able to be run independently.
+
+Do NOT wrap the code in a function definition. 
 
 Note it is NOT necessary for the code to be a completely
 general inplementation, it only needs to work for these
-specific inputs.
+specific inputs. 
 
 $imports
 Use the following output format:

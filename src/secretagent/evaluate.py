@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 from typing import Any, Iterator
+import warnings
 
 from secretagent import config, record, savefile
 from secretagent.dataset import Case, Dataset
@@ -26,6 +27,10 @@ class Evaluator(ABC):
 
         Outputs a dictionary with one or more metrics for the case,
         like {'correct': 1}.
+
+        If an exception was raised in making the prediction,
+        predicted_output will be a string starting with '**exception
+        raised**'
         """
         ...
 
@@ -34,7 +39,10 @@ class Evaluator(ABC):
         """
         # record a run
         with record.recorder() as records:
-            predicted_output = interface(*example.input_args)
+            try:
+                predicted_output = interface(*example.input_args)
+            except Exception as ex:
+                predicted_output = f'**exception raised**: {ex}'
         llm_usage_stats = self.aggregate_usage_stats(records)
         # compute the dataset-dependent metrics
         metrics = self.compare_predictions(
@@ -65,6 +73,7 @@ class Evaluator(ABC):
             row = self.measure(example, interface)
             row['case_name'] = example.name
             yield row
+            
 
     def evaluate(self, dataset: Dataset, interface: Interface) -> Path:
         """Compute and save measurements for a dataset.
@@ -81,8 +90,12 @@ class Evaluator(ABC):
             results = []
             for row in self.measurements(dataset, interface):
                 row.update(expt_name=expt_name)
-                results.append(row)
-                fp.write(json.dumps(row) + '\n')
+                try:
+                    fp.write(json.dumps(row) + '\n')
+                    results.append(row)
+                except TypeError:
+                    warnings.warn(f'discarded row that cannot be serialized {row}')
+                    
         # also save as CSV for easy loading
         df = pd.DataFrame(results).set_index('case_name')
         df.to_csv(csv_path)

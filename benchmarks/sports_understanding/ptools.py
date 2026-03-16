@@ -9,7 +9,7 @@ from secretagent.core import interface, implement_via
 #
 
 @interface
-def analyze_sentence(sentence: str) -> (str, str, str):
+def analyze_sentence(sentence: str) -> tuple[str, str, str]:
   """Extract a names of a player, and action, and an optional event.
 
   The action should be as descriptive as possible.  The event will be
@@ -48,15 +48,17 @@ def consistent_sports(sport1: str, sport2: str) -> bool:
   """
   ...
 
-@implement_via(method='direct')
-def sports_understanding(sentence) -> bool:
-  """Use the defined subagents to determine plausibility of a
-  sports-related sentence.
+@interface
+def are_sports_in_sentence_consistent(sentence:str) -> bool:
+  """Determine plausibility of a sports-related sentence.
 
-  Specifically, determines if the sports associated with the player,
+  Specifically, determine if the sports associated with the player,
   action and event in a sentence are all consistent with each other.
-
   """
+  ...
+
+# a hand-coded workflow
+def sports_understanding_workflow(sentence:str) -> bool:
   player, action, event = analyze_sentence(sentence)
   player_sport = sport_for(player)
   action_sport = sport_for(action)

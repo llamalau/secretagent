@@ -21,6 +21,7 @@ Example CLI commands:
 import json
 import pandas as pd
 from pathlib import Path
+import pprint
 import re
 from typing import Any
 
@@ -31,8 +32,6 @@ from secretagent.core import Interface, implement_via_config
 from secretagent import implement_pydantic # force registry of simulate_pydantic factory
 from secretagent.dataset import Dataset, Case
 from secretagent.evaluate import Evaluator
-from secretagent.savefile import getfiles
-
 #
 # tools are the tools and interfaces
 #
@@ -45,16 +44,16 @@ import ptools
 
 class SportsUnderstandingEvaluator(Evaluator):
     def compare_predictions(self, predicted_output, expected_output) -> dict[str, Any]:
-        return dict(correct=(predicted_output == expected_output))
+        return dict(correct=float(predicted_output == expected_output))
 
 #
 # how to load the dataset
 #
 
 def load_dataset(split: str) -> Dataset:
-    def example_as_case(index, example):
+    def example_as_case(index, split, example):
         return Case(
-            name=f'ex{index:03d}',
+            name=f'{split}.{index:03d}',
             input_args=(re.search(r'"([^"]*)"', example['input']).group(1),),
             expected_output=(example['target']=="yes")
         )
@@ -66,7 +65,7 @@ def load_dataset(split: str) -> Dataset:
             name='sports_understanding',
             split=split,
             cases=[
-                example_as_case(i, ex)
+                example_as_case(i, split, ex)
                 for i, ex in enumerate(examples)
             ],
         )
@@ -105,17 +104,45 @@ def run(ctx: typer.Context, expt_name: str = typer.Option(None, help="Set evalua
     # load the dataset, following the config
     dataset = load_dataset(config.require('dataset.split')).configure(
         shuffle_seed=config.get('dataset.shuffle_seed'),
-        n=config.get('dataset.n'))
+        n=config.get('dataset.n') or None  # don't pass in 0
+        )
+    print('dataset is', dataset.summary())
+
+    # configure the ptools
+    implement_via_config(ptools, config.require('ptools'))
+    evaluator = SportsUnderstandingEvaluator()
+    csv_path = evaluator.evaluate(dataset, ptools.are_sports_in_sentence_consistent)
+    df = pd.read_csv(csv_path)
+    print(df)
+
+@app.command(context_settings={"allow_extra_args": True, "allow_interspersed_args": False})
+def quick_test(ctx: typer.Context, expt_name: str = typer.Option(None, help="Set evaluate.expt_name")):
+    config_file =  Path(__file__).parent / 'conf' / 'conf.yaml'
+    config.configure(yaml_file=config_file, dotlist=ctx.args)
+    config.set_root(Path(__file__).parent)
+    pprint.pprint(config.GLOBAL_CONFIG)
+
+    # load the dataset, following the config
+    dataset = load_dataset(config.require('dataset.split')).configure(
+        shuffle_seed=config.get('dataset.shuffle_seed'),
+        n=config.get('dataset.n') or None  # don't pass in 0
+        )
     print('dataset is', dataset.summary())
 
     # configure the ptools
     implement_via_config(ptools, config.require('ptools'))
 
-    evaluator = SportsUnderstandingEvaluator()
-    csv_path = evaluator.evaluate(dataset, ptools.sports_understanding)
-    df = pd.read_csv(csv_path)
-    print(df)
+    input_args = dataset.cases[0].input_args
+    print('input_args', input_args)
+    with config.configuration(
+            cachier={'enable_caching':False},
+            echo={
+                'service': True, 'llm_input': True, 'llm_output': True, 'code_eval_input': True, 'code_eval_output': True}):
+        with record.recorder() as records:
+            predicted_output = ptools.are_sports_in_sentence_consistent(*input_args)
 
+    print('predicted output', predicted_output)
+    pprint.pprint(records)
 
 if __name__ == '__main__':
     app()

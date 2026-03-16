@@ -45,7 +45,7 @@ def filename(basedir: str, name: str, file_under: str = DEFAULT_TAG) -> Path:
     return filename_list(basedir, [name], file_under=file_under)[0]
 
 
-def _file_under_part(p: Path) -> str:
+def file_under_part(p: Path) -> str:
     """Extract the file_under tag from a directory name.
 
     Directory names have the format '{YYYYMMDD}.{HHMMSS}.{file_under}',
@@ -86,7 +86,7 @@ def filter_paths(paths: list[Path], latest: int = 0, dotlist: list[str] = []) ->
         active = set(config.to_dotlist(cfg_for_p))
         config.sanity_check('filter_paths', constraints, cfg_for_p)
         if constraints <= active:
-            by_tag[_file_under_part(p)].append(p)
+            by_tag[file_under_part(p)].append(p)
 
     candidates = []
     for tag in sorted(by_tag):

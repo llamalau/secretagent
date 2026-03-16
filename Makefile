@@ -3,9 +3,9 @@ test:
 
 wc:
 	wc src/secretagent/*.py
+	echo 
+	cloc src/secretagent/*.py
 
-cloc:	
-	cloc src/secretagent
 
 quickstart:
 	uv run examples/quickstart.py
@@ -16,6 +16,9 @@ examples: quickstart
 
 expt:
 	time uv run benchmarks/sports_understanding/expt.py run
+
+results:
+	uv run -m secretagent.cli.results --help
 
 costs:
 	uv run -m secretagent.cli.costs benchmarks/sports_understanding/llm_cache

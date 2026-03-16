@@ -97,6 +97,17 @@ def test_direct_with_custom_fn():
     _INTERFACES.remove(my_func)
 
 
+def test_direct_with_dotted_string_fn():
+    """DirectFactory should resolve a dotted string like 'os.path.exists'."""
+    @interface
+    def check_path(path: str) -> bool:
+        """Check if path exists."""
+
+    check_path.implement_via('direct', fn='os.path.exists')
+    assert check_path('/') is True
+    _INTERFACES.remove(check_path)
+
+
 @needs_api_key
 def test_simulate():
     sport_for.implement_via('simulate', llm = dict(model="claude-haiku-4-5-20251001"))

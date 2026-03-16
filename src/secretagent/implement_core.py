@@ -4,6 +4,7 @@ Provides DirectFactory, SimulateFactory, PromptLLMFactory, and PoTFactory.
 """
 
 import ast
+import importlib
 import pathlib
 import re
 
@@ -27,9 +28,19 @@ class DirectFactory(Implementation.Factory):
 
     Defaults to the body of the interface functions. 
     """
+    @staticmethod
+    def _resolve_dotted(name: str) -> Callable:
+        """Resolve a dotted name like 'module.func' to the actual object.
+        """
+        parts = name.split('.')
+        obj = importlib.import_module(parts[0])
+        for part in parts[1:]:
+            obj = getattr(obj, part)
+        return obj
+
     def build_fn(self, interface: Interface, fn: Callable | str | None = None, **_kw) -> Callable:
         if isinstance(fn, str):
-            return locals()[fn]
+            return DirectFactory._resolve_dotted(fn)
         elif fn is not None:
             return fn
         else:

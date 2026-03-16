@@ -6,7 +6,7 @@ cachier:
 
 evaluate:
   result_dir: results
-  expt_name: workflow
+  expt_name: DEFAULT # means the expt isn't fully configured and should be discarded
 
 dataset:
   split: valid
@@ -19,5 +19,5 @@ ptools:
     method: simulate
   consistent_sports:
     method: simulate
-  sports_understanding:
-    method: direct
+  are_sports_in_sentence_consistent:
+    method: DEFAULT #should raise an error

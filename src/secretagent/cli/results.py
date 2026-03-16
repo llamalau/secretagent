@@ -29,13 +29,13 @@ Example usage:
     uv run -m secretagent.cli.results compare results/* --latest 0
 """
 
+from collections import Counter
 import typer
 import pandas as pd
 from itertools import combinations
 from pathlib import Path
 from typing import Optional
 
-from omegaconf import OmegaConf
 from scipy import stats as scipy_stats
 
 from secretagent import config, savefile
@@ -118,60 +118,47 @@ def pair(
         raise ValueError('Need at least 2 experiments for paired comparison')
     rows = []
     for (pa, da), (pb, db) in combinations(zip(dirs, dfs), 2):
+        fua = savefile.file_under_part(pa)
+        fub = savefile.file_under_part(pb)
         joined = da.join(db, lsuffix='_a', rsuffix='_b', how='inner')
         n = len(joined)
         if n == 0:
             print(f"\n{pa} vs {pb}: <2 shared example_ids, skipping")
             continue
+        row = {
+            '_comparison': f'{fua} vs {fub}',
+            'n': n}
         for m in metric:
-            print('****', joined[f'{m}_a'])
-            print('****', joined[f'{m}_b'])
             t, p = scipy_stats.ttest_rel(joined[f'{m}_a'], joined[f'{m}_b'])
-            rows.append({
-                'comparison': f'{pa} vs {pb}',
-                'n': n,
-                f'{m}_t': t,
-                f'{m}_p': p})
+            row[f'{m}_t'] = t
+            row[f'{m}_p'] = p
+        rows.append(row)
     print(pd.DataFrame(rows))
             
 
 @app.command(context_settings=_EXTRA_ARGS)
-def compare(
+def compare_configs(
     ctx: typer.Context,
     latest: int = typer.Option(1, help='Keep latest k dirs per tag; 0 for all'),
     check: Optional[list[str]] = typer.Option(None, help='Config constraint like key=value'),
 ):
     """Show configuration differences between experiments."""
     dirs = _get_dirs(ctx, latest=latest, check=check)
-    if len(dirs) < 2:
-        typer.echo('Need at least 2 experiment directories to compare.')
-        raise typer.Exit(1)
-    configs = {}
+    ctr = Counter()
+    all_pairs = {}
     for d in dirs:
-        cfg = _load_config(d)
-        if cfg:
-            configs[d.name] = dict(pair.split('=', 1) for pair in config.to_dotlist(OmegaConf.create(cfg)))
-    if len(configs) < 2:
-        typer.echo('Not enough configs found to compare.')
-        raise typer.Exit(1)
-    names = list(configs.keys())
-    all_keys = sorted(set().union(*(c.keys() for c in configs.values())))
-    diffs = []
-    for key in all_keys:
-        values = [configs[n].get(key) for n in names]
-        if len(set(str(v) for v in values)) > 1:
-            diffs.append((key, values))
-    if not diffs:
-        typer.echo('All configurations are identical.')
-        return
-    typer.echo('Configuration differences:\n')
-    col_width = max(len(n) for n in names)
-    header = '  '.join(f'{n:>{col_width}}' for n in names)
-    typer.echo(f"{'key':<30}  {header}")
-    typer.echo('-' * (30 + 2 + (col_width + 2) * len(names)))
-    for key, values in diffs:
-        vals = '  '.join(f'{str(v):>{col_width}}' for v in values)
-        typer.echo(f'{key:<30}  {vals}')
+        cfg = config.load_yaml_cfg(d / 'config.yaml')
+        all_pairs[d] = config.to_dotlist(cfg)
+        for pair in all_pairs[d]:
+            ctr[pair] += 1
+    for d, pairs in all_pairs.items():
+        uncommon_pairs = [
+            pair for pair in pairs
+            if ctr[pair] < len(dirs)
+        ]
+        print(f'properties of {d}:')
+        for p in uncommon_pairs:
+            print(f'  {p}')
 
 
 @app.callback()
