@@ -59,6 +59,18 @@ costs:
 
 RECORD_OPTS = dataset.split=train evaluate.record_details=true evaluate.result_dir=recordings
 
+record_zeroshot_unstructured: 
+	uv run expt.py run evaluate.expt_name=zeroshot_unstructured \
+	  ptools.are_sports_in_sentence_consistent.method=direct \
+	  ptools.are_sports_in_sentence_consistent.fn=ptools.zeroshot_unstructured_workflow \
+	  $(RECORD_OPTS)	
+
+record_workflow:
+	uv run expt.py run evaluate.expt_name=workflow \
+	  ptools.are_sports_in_sentence_consistent.method=direct \
+	  ptools.are_sports_in_sentence_consistent.fn=ptools.sports_understanding_workflow \
+	  $(RECORD_OPTS)	
+
 record_pot:
 	uv run expt.py run evaluate.expt_name=pot \
 	  ptools.are_sports_in_sentence_consistent.method=program_of_thought \
