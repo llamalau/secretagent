@@ -23,75 +23,118 @@ def _load_learned(path):
     return mod
 
 
-# --- learn() tests ---
+# --- fit() tests ---
 
 
-def test_learn_creates_file(tmp_path):
+def test_fit_creates_file(tmp_path):
     ds = _make_dataset([(['a'], None, 'x')])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'my_func')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'my_func')
     assert outpath.exists()
     assert outpath.name == 'learned.py'
 
 
-def test_learn_returns_most_common(tmp_path):
+def test_fit_returns_most_common(tmp_path):
     ds = _make_dataset([
         (['hello'], None, 'world'),
         (['hello'], None, 'world'),
         (['hello'], None, 'earth'),
     ])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'my_func')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'my_func')
     mod = _load_learned(outpath)
     assert mod.my_func('hello') == 'world'
 
 
-def test_learn_returns_none_for_unseen(tmp_path):
+def test_fit_returns_none_for_unseen(tmp_path):
     ds = _make_dataset([(['a'], None, 'x')])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'my_func')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'my_func')
     mod = _load_learned(outpath)
     assert mod.my_func('unseen') is None
 
 
-def test_learn_multiple_inputs(tmp_path):
+def test_fit_multiple_inputs(tmp_path):
     ds = _make_dataset([
         (['a'], None, '1'),
         (['b'], None, '2'),
     ])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'f')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'f')
     mod = _load_learned(outpath)
     assert mod.f('a') == '1'
     assert mod.f('b') == '2'
 
 
-def test_learn_with_kwargs(tmp_path):
+def test_fit_with_kwargs(tmp_path):
     ds = _make_dataset([
         ([], {'x': 1, 'y': 2}, 'ok'),
     ])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'f')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'f')
     mod = _load_learned(outpath)
     assert mod.f(x=1, y=2) == 'ok'
     assert mod.f(x=1, y=99) is None
 
 
-def test_learn_with_mixed_args_and_kwargs(tmp_path):
+def test_fit_with_mixed_args_and_kwargs(tmp_path):
     ds = _make_dataset([
         (['pos'], {'key': 'val'}, 'result'),
     ])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'f')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'f')
     mod = _load_learned(outpath)
     assert mod.f('pos', key='val') == 'result'
 
 
-def test_learn_creates_outdir(tmp_path):
+def test_fit_function_named_after_interface(tmp_path):
     ds = _make_dataset([(['a'], None, 'x')])
-    outdir = tmp_path / 'nested' / 'dir'
-    outpath = RoteLearner().load(ds).learn(outdir, 'f')
-    assert outdir.exists()
-    assert outpath.exists()
-
-
-def test_learn_function_named_after_interface(tmp_path):
-    ds = _make_dataset([(['a'], None, 'x')])
-    outpath = RoteLearner().load(ds).learn(tmp_path / 'out', 'classify')
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'classify')
     mod = _load_learned(outpath)
     assert hasattr(mod, 'classify')
     assert mod.classify('a') == 'x'
+
+
+def test_fit_preserves_list_output(tmp_path):
+    ds = _make_dataset([
+        (['a'], None, ['x', 'y']),
+    ])
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'f')
+    mod = _load_learned(outpath)
+    assert mod.f('a') == ['x', 'y']
+
+
+def test_fit_preserves_dict_output(tmp_path):
+    ds = _make_dataset([
+        (['a'], None, {'k': 'v'}),
+    ])
+    outdir = tmp_path / 'out'
+    outdir.mkdir()
+    outpath = RoteLearner(ds).fit(outdir, 'f')
+    mod = _load_learned(outpath)
+    assert mod.f('a') == {'k': 'v'}
+
+
+# --- report() tests ---
+
+
+def test_report_returns_string():
+    ds = _make_dataset([
+        (['a'], None, 'x'),
+        (['a'], None, 'x'),
+        (['b'], None, 'y'),
+    ])
+    result = RoteLearner(ds).report()
+    assert isinstance(result, str)
+    assert 'inputs' in result
+    assert 'coverage' in result
