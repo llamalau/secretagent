@@ -1,18 +1,56 @@
 import importlib.util
+import json
 
 import pytest
+from omegaconf import OmegaConf
 
-from secretagent.dataset import Dataset, Case
+from secretagent import config
 from secretagent.learn.baselines import RoteLearner
 
 
-def _make_dataset(cases_data):
-    """Create a Dataset from a list of (input_args, input_kw, expected_output) tuples."""
-    cases = [
-        Case(name=f'c{i}', input_args=args, input_kw=kw, expected_output=out)
-        for i, (args, kw, out) in enumerate(cases_data)
-    ]
-    return Dataset(name='test', cases=cases)
+@pytest.fixture(autouse=True)
+def clean_config():
+    """Reset config before and after each test."""
+    saved = config.GLOBAL_CONFIG.copy()
+    yield
+    config.GLOBAL_CONFIG = saved
+
+
+def _make_recording_dir(base, name, records):
+    """Create a fake recording directory with config.yaml and results.jsonl."""
+    d = base / name
+    d.mkdir()
+    with open(d / 'config.yaml', 'w') as f:
+        f.write(OmegaConf.to_yaml(OmegaConf.create({'llm': {'model': 'test'}})))
+    with open(d / 'results.jsonl', 'w') as f:
+        for rec in records:
+            f.write(json.dumps(rec) + '\n')
+    return d
+
+
+def _make_records(interface_name, cases_data):
+    """Build JSONL records from (args, kw, output) tuples, one rollout step each."""
+    records = []
+    for args, kw, output in cases_data:
+        records.append({
+            'predicted_output': output,
+            'expected_output': output,
+            'rollout': [
+                {'func': interface_name, 'args': args, 'kw': kw or {}, 'output': output},
+            ],
+        })
+    return records
+
+
+def _make_learner(tmp_path, interface_name, cases_data):
+    """Create a RoteLearner from synthetic data."""
+    records = _make_records(interface_name, cases_data)
+    _make_recording_dir(tmp_path, '20260101.120000.expt', records)
+    return RoteLearner(
+        interface_name=interface_name,
+        dirs=[tmp_path / '20260101.120000.expt'],
+        train_dir=str(tmp_path / 'train'),
+    )
 
 
 def _load_learned(path):
@@ -23,118 +61,112 @@ def _load_learned(path):
     return mod
 
 
-# --- fit() tests ---
+# --- fit() / save_code() tests ---
 
 
-def test_fit_creates_file(tmp_path):
-    ds = _make_dataset([(['a'], None, 'x')])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'my_func')
+def test_save_code_creates_file(tmp_path):
+    learner = _make_learner(tmp_path, 'my_func', [(['a'], None, 'x')])
+    learner.fit()
+    outpath = learner.save_code()
     assert outpath.exists()
     assert outpath.name == 'learned.py'
 
 
-def test_fit_returns_most_common(tmp_path):
-    ds = _make_dataset([
+def test_returns_most_common(tmp_path):
+    learner = _make_learner(tmp_path, 'my_func', [
         (['hello'], None, 'world'),
         (['hello'], None, 'world'),
         (['hello'], None, 'earth'),
     ])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'my_func')
-    mod = _load_learned(outpath)
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.my_func('hello') == 'world'
 
 
-def test_fit_returns_none_for_unseen(tmp_path):
-    ds = _make_dataset([(['a'], None, 'x')])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'my_func')
-    mod = _load_learned(outpath)
+def test_returns_none_for_unseen(tmp_path):
+    learner = _make_learner(tmp_path, 'my_func', [(['a'], None, 'x')])
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.my_func('unseen') is None
 
 
-def test_fit_multiple_inputs(tmp_path):
-    ds = _make_dataset([
+def test_multiple_inputs(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [
         (['a'], None, '1'),
         (['b'], None, '2'),
     ])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'f')
-    mod = _load_learned(outpath)
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.f('a') == '1'
     assert mod.f('b') == '2'
 
 
-def test_fit_with_kwargs(tmp_path):
-    ds = _make_dataset([
+def test_with_kwargs(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [
         ([], {'x': 1, 'y': 2}, 'ok'),
     ])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'f')
-    mod = _load_learned(outpath)
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.f(x=1, y=2) == 'ok'
     assert mod.f(x=1, y=99) is None
 
 
-def test_fit_with_mixed_args_and_kwargs(tmp_path):
-    ds = _make_dataset([
+def test_with_mixed_args_and_kwargs(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [
         (['pos'], {'key': 'val'}, 'result'),
     ])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'f')
-    mod = _load_learned(outpath)
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.f('pos', key='val') == 'result'
 
 
-def test_fit_function_named_after_interface(tmp_path):
-    ds = _make_dataset([(['a'], None, 'x')])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'classify')
-    mod = _load_learned(outpath)
+def test_function_named_after_interface(tmp_path):
+    learner = _make_learner(tmp_path, 'classify', [(['a'], None, 'x')])
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert hasattr(mod, 'classify')
     assert mod.classify('a') == 'x'
 
 
-def test_fit_preserves_list_output(tmp_path):
-    ds = _make_dataset([
-        (['a'], None, ['x', 'y']),
-    ])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'f')
-    mod = _load_learned(outpath)
+def test_preserves_list_output(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [(['a'], None, ['x', 'y'])])
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.f('a') == ['x', 'y']
 
 
-def test_fit_preserves_dict_output(tmp_path):
-    ds = _make_dataset([
-        (['a'], None, {'k': 'v'}),
-    ])
-    outdir = tmp_path / 'out'
-    outdir.mkdir()
-    outpath = RoteLearner(ds).fit(outdir, 'f')
-    mod = _load_learned(outpath)
+def test_preserves_dict_output(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [(['a'], None, {'k': 'v'})])
+    learner.fit()
+    mod = _load_learned(learner.save_code())
     assert mod.f('a') == {'k': 'v'}
 
 
 # --- report() tests ---
 
 
-def test_report_returns_string():
-    ds = _make_dataset([
+def test_report_returns_string(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [
         (['a'], None, 'x'),
         (['a'], None, 'x'),
         (['b'], None, 'y'),
     ])
-    result = RoteLearner(ds).report()
+    learner.fit()
+    result = learner.report()
     assert isinstance(result, str)
     assert 'inputs' in result
     assert 'coverage' in result
+
+
+# --- out_dir tests ---
+
+
+def test_out_dir_has_data_json(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [(['a'], None, 'x')])
+    assert (learner.out_dir / 'data.json').exists()
+
+
+def test_out_dir_has_sources_txt(tmp_path):
+    learner = _make_learner(tmp_path, 'f', [(['a'], None, 'x')])
+    sources = (learner.out_dir / 'sources.txt').read_text().strip().split('\n')
+    assert len(sources) == 1

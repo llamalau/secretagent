@@ -1,6 +1,8 @@
 """Baseline learners that learn implementations from recorded interface calls.
 """
 
+import inspect
+import pprint
 import textwrap
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -8,9 +10,8 @@ from typing import Optional
 
 import typer
 
-from secretagent import config, savefile
-from secretagent.dataset import Dataset
-from secretagent.learn.utils import collect_interface_data
+from secretagent.learn.core import Learner
+
 
 def _make_hashable(obj):
     """Convert a JSON-decoded object to a hashable form."""
@@ -20,57 +21,62 @@ def _make_hashable(obj):
         return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
     return obj
 
-class RoteLearner:
+
+class RoteLearner(Learner):
     """Learns a function that returns most commonly seen output for
     each input.
     """
 
-    def __init__(self, dataset: Dataset):
-        # for each possible input, saves a Counter of possible output
-        # values with their frequencies
-        self.counts = defaultdict(Counter)
-        self._original_output = {}  # hashable_output -> original output
-        for case in dataset.cases:
+    def __init__(self, interface_name, dirs, train_dir, *,
+                 latest=1, check=None):
+        super().__init__(
+            interface_name=interface_name,
+            dirs=dirs,
+            train_dir=train_dir,
+            file_under=f'{interface_name}.rote',
+            latest=latest,
+            check=check,
+        )
+
+    def fit(self):
+        """Compute the most common output for each input."""
+        # for each possible input, count output frequencies
+        counts = defaultdict(Counter)
+        original_output = {}  # hashable_output -> original output
+        for case in self.dataset.cases:
             args_key = _make_hashable(case.input_args or [])
             kw_key = _make_hashable(case.input_kw or {})
             input_key = (args_key, kw_key)
             output_key = _make_hashable(case.expected_output)
-            self.counts[input_key][output_key] += 1
-            self._original_output[output_key] = case.expected_output
+            counts[input_key][output_key] += 1
+            original_output[output_key] = case.expected_output
+        # pick the most common output for each input
+        self._most_common_output = {}
+        for input_key, counter in counts.items():
+            best_output, _ = counter.most_common(1)[0]
+            self._most_common_output[input_key] = original_output[best_output]
+        self.counts = counts
 
-    def fit(self, outdir: str | Path, interface_name: str) -> Path:
+    def save_code(self) -> Path:
         """Write a learned.py file with a function that returns the most common output.
 
         The generated function accepts *args, **kw and looks up the input
         in a precomputed dict, returning the most common output or None.
         """
-        # Build mapping from input_key -> most_common_output in original form
-        most_common_output = {}
-        for input_key, counter in self.counts.items():
-            best_output, _ = counter.most_common(1)[0]
-            most_common_output[input_key] = self._original_output[best_output]
-
-        outpath = outdir / 'learned.py'
-        outpath.write_text(textwrap.dedent(f"""\
-            \"\"\"Auto-generated rote-learned implementation for {interface_name}.\"\"\"
-
-            def _make_hashable(obj):
-                if isinstance(obj, list):
-                    return tuple(_make_hashable(x) for x in obj)
-                if isinstance(obj, dict):
-                    return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
-                return obj
-
-            _MOST_COMMON_OUTPUT = {repr(most_common_output)}
-
-            def {interface_name}(*args, **kw):
-                args_key = _make_hashable(list(args))
-                kw_key = _make_hashable(kw)
-                return _MOST_COMMON_OUTPUT.get((args_key, kw_key))
-        """))
+        hashable_src = inspect.getsource(_make_hashable)
+        outpath = self.out_dir / 'learned.py'
+        outpath.write_text(
+            f'"""Auto-generated rote-learned implementation for {self.interface_name}."""\n\n'
+            f'{hashable_src}\n'
+            f'_MOST_COMMON_OUTPUT = {pprint.pformat(self._most_common_output)}\n\n'
+            f'def {self.interface_name}(*args, **kw):\n'
+            f'    args_key = _make_hashable(list(args))\n'
+            f'    kw_key = _make_hashable(kw)\n'
+            f'    return _MOST_COMMON_OUTPUT.get((args_key, kw_key))\n'
+        )
         return outpath
 
-    def report(self) -> list[dict]:
+    def report(self) -> str:
         """Brief report on likely rote-learning performance.
         """
         total = sum(ctr.total() for ctr in self.counts.values())
@@ -95,12 +101,16 @@ def rote(
     Recording directories are passed as extra positional arguments.
     They are filtered through savefile.filter_paths().
     """
-    config.configure(cfg={'train_dir': train_dir})
-    dirs = savefile.filter_paths(ctx.args, latest=latest, dotlist=check or [])
-    out_dir, dataset = collect_interface_data(dirs, interface, file_under=f'{interface}.rote')
-    print(f'collected {len(dataset.cases)} examples in working directory {out_dir}')
-    learner = RoteLearner(dataset)
-    output_file = learner.fit(out_dir, interface)
+    learner = RoteLearner(
+        interface_name=interface,
+        dirs=[Path(p) for p in ctx.args],
+        train_dir=train_dir,
+        latest=latest,
+        check=check,
+    )
+    print(f'collected {len(learner.dataset.cases)} examples in working directory {learner.out_dir}')
+    learner.fit()
+    output_file = learner.save_code()
     print(learner.report())
     print(f'saved output to {output_file}')
 
