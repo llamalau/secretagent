@@ -1,11 +1,12 @@
 llm:
   model: claude-haiku-4-5-20251001
+  thinking: true
 
 cachier:
   cache_dir: llm_cache
 
 evaluate:
-  expt_name: team_workflow
+  expt_name: team
   result_dir: results
   entry_point: answer_question
 
@@ -19,11 +20,5 @@ ptools:
     method: simulate
   extract_index:
     method: simulate
-  extract_profiles:
-    method: simulate
-  evaluate_allocations:
-    method: simulate
   answer_question:
-    method: direct
-  answer_question_workflow:
     method: direct

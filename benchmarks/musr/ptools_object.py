@@ -108,7 +108,10 @@ def answer_question(narrative: str, question: str, choices: list) -> int:
 
 @interface
 def answer_question_workflow(narrative: str, question: str, choices: list) -> int:
-    """Solve by extracting movements, inferring belief, then matching."""
-    movements = extract_movements(narrative)
-    text = infer_belief(narrative, movements, question, choices)
+    """Infer belief directly from narrative, then match to choices.
+
+    Ablation showed skipping extract_movements and reasoning directly
+    with infer_belief + thinking gives best results (69% vs 65%).
+    """
+    text = infer_belief(narrative, "", question, choices)
     return extract_index(text, choices)

@@ -67,34 +67,11 @@ object_pot:
 	  ptools.answer_question.method=program_of_thought \
 	  ptools.answer_question.tools=[ptools_object.extract_movements,ptools_object.infer_belief]
 
-# --- Team allocation ---
+# --- Team allocation (single-ptool, simulate+thinking wins at 84%) ---
 
-team_zs:
+team:
 	uv run python expt.py run --config-file conf/team.yaml \
-	  evaluate.expt_name=team_zs llm.model=$(MODEL) dataset.n=$(N)
-
-team_cot:
-	uv run python expt.py run --config-file conf/team.yaml \
-	  evaluate.expt_name=team_cot llm.model=$(MODEL) dataset.n=$(N) \
-	  ptools.raw_answer.method=prompt_llm \
-	  ptools.raw_answer.prompt_template_file=prompt_templates/zero_shot_cot.txt
-
-team_workflow:
-	uv run python expt.py run --config-file conf/team.yaml \
-	  evaluate.expt_name=team_workflow llm.model=$(MODEL) dataset.n=$(N) \
-	  evaluate.entry_point=answer_question_workflow
-
-team_react:
-	uv run python expt.py run --config-file conf/team.yaml \
-	  evaluate.expt_name=team_react llm.model=$(MODEL) dataset.n=$(N) \
-	  ptools.answer_question.method=simulate_pydantic \
-	  ptools.answer_question.tools=[ptools_team.extract_profiles,ptools_team.evaluate_allocations]
-
-team_pot:
-	uv run python expt.py run --config-file conf/team.yaml \
-	  evaluate.expt_name=team_pot llm.model=$(MODEL) dataset.n=$(N) \
-	  ptools.answer_question.method=program_of_thought \
-	  ptools.answer_question.tools=[ptools_team.extract_profiles,ptools_team.evaluate_allocations]
+	  evaluate.expt_name=team llm.model=$(MODEL) dataset.n=$(N)
 
 #
 # View results of past experiments
