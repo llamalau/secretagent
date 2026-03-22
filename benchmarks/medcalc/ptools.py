@@ -71,23 +71,40 @@ Examples:
 """
 
 
-@interface
+def _build_medical_value_src(func_name: str, docstring: str) -> str:
+    """Build a synthetic source string with the docstring embedded."""
+    # Indent the docstring for Python source
+    doc_lines = docstring.strip().split('\n')
+    indented = '\n'.join('    ' + line for line in doc_lines)
+    return (
+        f'def {func_name}(patient_note: str, question: str) -> float:\n'
+        f'    """{doc_lines[0]}\n'
+        f'\n{indented}\n'
+        f'    """\n'
+        f'    ...\n'
+    )
+
+
 def calculate_medical_value(patient_note: str, question: str) -> float:
     ...
 
-# Set docstring after definition (needed for dynamic formula injection)
-calculate_medical_value.func.__doc__ = _CALCULATE_DOCSTRING
+calculate_medical_value.__doc__ = _CALCULATE_DOCSTRING
+calculate_medical_value = interface(calculate_medical_value)
+calculate_medical_value.src = _build_medical_value_src(
+    'calculate_medical_value', _CALCULATE_DOCSTRING)
 
 
 # =============================================================================
 # L2 helper: simulate fallback for distilled workflow
 # =============================================================================
 
-@interface
 def simulate_medical_value(patient_note: str, question: str) -> float:
     ...
 
-simulate_medical_value.func.__doc__ = _CALCULATE_DOCSTRING
+simulate_medical_value.__doc__ = _CALCULATE_DOCSTRING
+simulate_medical_value = interface(simulate_medical_value)
+simulate_medical_value.src = _build_medical_value_src(
+    'simulate_medical_value', _CALCULATE_DOCSTRING)
 
 
 # =============================================================================
