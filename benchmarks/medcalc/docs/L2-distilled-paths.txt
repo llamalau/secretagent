@@ -1,0 +1,18 @@
+=== L2 DISTILLED (secretagent: direct workflow) ===
+Two paths through distilled_workflow():
+======================================================================
+
+PATH A: Python succeeds (no LLM call)
+----------------------------------------
+calculators.calculate(patient_note, question)
+  1. identify_calculator(question) -> regex pattern matching on question text
+  2. extract values via Python regex (extract_weight_kg, extract_height_cm, etc)
+  3. compute result via Python formula (bmi = weight / height_m**2)
+  -> Returns CalcResult(result=26.122)
+  -> ZERO LLM calls. Deterministic.
+
+PATH B: Python fails -> fallback
+----------------------------------------
+Calls simulate_medical_value(patient_note, question)
+which is IDENTICAL to the L1 prompt above.
+Same interface, same docstring, same simulate factory template.

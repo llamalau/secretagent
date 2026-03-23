@@ -1,0 +1,85 @@
+=== L4 PIPELINE (secretagent: direct multi-stage workflow) ===
+Python orchestrates 1-3 LLM calls + Python computation.
+======================================================================
+
+CALL 1: identify_calculator (simulate framing)
+--------------------------------------------------
+
+Consider the following documentation stub for a Python function.  Note
+that this is documentation, not a full implementation.
+```python
+def identify_calculator(question: str, available_calculators: list[str]) -> dict:
+    """Identify which medical calculator is needed based on the question.
+
+    Analyze the question and match it to one of the available calculators.
+
+    Return a dict with:
+    - "calculator_name": exact name from the available list
+    - "confidence": 0.0-1.0 confidence score
+    - "reasoning": brief explanation
+
+    Examples:
+    >>> identify_calculator("What is the patient's BMI?", ["Body Mass Index (BMI)", "Ideal Body Weight (Devine)"])
+    {'calculator_name': 'Body Mass Index (BMI)', 'confidence': 0.99, 'reasoning': 'BMI directly asked'}
+    """
+    ...
+
+```
+
+
+Imagine that this function was fully implemented as suggested by the
+documentation stub, and that function were called with these arguments:
+
+question = "What is the patient's BMI?"; available_calculators = ['Body Mass Index (BMI)', 'Ideal Body Weight (Devine)', '...55 calculators total...']
+
+Propose a possible output of the function for these inputs that is
+consistent with the documentation. Use the following output format:
+
+
+<answer>
+FINAL ANSWER
+</answer>
+
+If your answer is x, show it as it would printed by a Python
+interpreter called by print(x). Specifically if x is a string do NOT
+include quotes around it.  Also, do not include any text other than
+the final answer between the <answer> and </answer> tags.
+
+
+CALL 2: _extract_values_two_stage (raw llm() call)
+--------------------------------------------------
+For scoring systems, a medical reasoning prompt runs first.
+Then the extraction prompt:
+
+Extract values from the patient note for the Body Mass Index (BMI) calculator.
+
+CALCULATOR DESCRIPTION:
+Calculate Body Mass Index.
+
+    Formula: BMI = weight_kg / (height_m)^2
+
+    Input:
+        weight_kg: Patient weight in kilograms (e.g., 80.0)
+        height_cm: Patient height in centimeters (e.g., 175.0)
+
+PATIENT NOTE:
+A 70-year-old male weighing 80 kg, height 175 cm.
+
+INSTRUCTIONS:
+- Extract numeric values with proper units
+- Convert units as needed
+- For sex: "man"/"male"/"he" -> "male"
+
+Return ONLY valid JSON:
+{"extracted": {"param_name": value, ...}, "missing": [...]}
+
+COMPUTATION (no LLM):
+--------------------------------------------------
+If extraction succeeds:
+  compute_official("Body Mass Index (BMI)", {"weight": [80, "kg"], ...})
+  -> deterministic Python -> 26.122
+
+FALLBACK (if pipeline fails):
+--------------------------------------------------
+Calls simulate_medical_value(patient_note, question)
+IDENTICAL to the L1 prompt.
