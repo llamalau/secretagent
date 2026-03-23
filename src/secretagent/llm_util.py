@@ -34,6 +34,10 @@ def _llm_impl(prompt: str, model: str) -> tuple[str, dict[str, Any]]:
 
   messages = [dict(role='user', content=prompt)]
   stream = config.get('llm.stream', False)
+  max_tokens = config.get('llm.max_tokens', None)
+  extra_kw = {}
+  if max_tokens:
+    extra_kw['max_tokens'] = int(max_tokens)
   start_time = time.time()
 
   if stream:
@@ -41,6 +45,7 @@ def _llm_impl(prompt: str, model: str) -> tuple[str, dict[str, Any]]:
     response_stream = completion(
         model=model, messages=messages, stream=True,
         stream_options={'include_usage': True},
+        **extra_kw,
     )
     for chunk in response_stream:
       delta = ''
@@ -73,7 +78,7 @@ def _llm_impl(prompt: str, model: str) -> tuple[str, dict[str, Any]]:
       cost=cost,
     )
   else:
-    response = completion(model=model, messages=messages)
+    response = completion(model=model, messages=messages, **extra_kw)
     latency = time.time() - start_time
     msg = response.choices[0].message
     content = msg.content or ''
@@ -84,7 +89,15 @@ def _llm_impl(prompt: str, model: str) -> tuple[str, dict[str, Any]]:
     if content and '<answer>' in content:
       model_output = content
     elif reasoning and '<answer>' in reasoning:
-      model_output = reasoning
+      # Extract only the LAST <answer>...</answer> block from reasoning,
+      # since earlier ones are the model thinking about the format.
+      import re
+      matches = re.findall(r'<answer>(.*?)</answer>', reasoning, re.DOTALL)
+      if matches:
+        last_answer = matches[-1].strip()
+        model_output = f'<answer>{last_answer}</answer>'
+      else:
+        model_output = reasoning
     else:
       model_output = content or reasoning
 

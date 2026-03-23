@@ -1,5 +1,6 @@
 llm:
   model: together_ai/Qwen/Qwen3.5-9B
+  max_tokens: 65536
 
 cachier:
   cache_dir: llm_cache
@@ -13,7 +14,7 @@ evaluate:
 dataset:
   split: murder_mysteries
   shuffle_seed: 42
-  n: 20
+  n: 10
 
 ptools:
   raw_answer:
