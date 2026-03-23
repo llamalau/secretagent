@@ -30,10 +30,15 @@ def _llm_impl(prompt: str, model: str) -> tuple[str, dict[str, Any]]:
     echo_boxed(prompt, 'llm_input')
 
   messages = [dict(role='user', content=prompt)]
+  completion_kw = {}
+  max_tokens = config.get('llm.max_tokens')
+  if max_tokens is not None:
+    completion_kw['max_tokens'] = int(max_tokens)
   start_time = time.time()
   response = completion(
     model=model,
-    messages=messages
+    messages=messages,
+    **completion_kw
   )
   latency = time.time() - start_time
   model_output = response.choices[0].message.content

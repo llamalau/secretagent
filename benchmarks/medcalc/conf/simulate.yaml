@@ -1,6 +1,7 @@
 # L1: Simulate — LLM predicts function output from rich docstring
 llm:
   model: together_ai/Qwen/Qwen3.5-9B
+  max_tokens: 16384
 
 cachier:
   cache_dir: llm_cache
