@@ -1,9 +1,4 @@
-=== L4 PIPELINE (secretagent: direct multi-stage workflow) ===
-Python orchestrates 1-3 LLM calls + Python computation.
-======================================================================
-
-CALL 1: identify_calculator (simulate framing)
---------------------------------------------------
+========== SECRETAGENT: Call 1 — identify calculator ==========
 
 Consider the following documentation stub for a Python function.  Note
 that this is documentation, not a full implementation.
@@ -30,7 +25,7 @@ def identify_calculator(question: str, available_calculators: list[str]) -> dict
 Imagine that this function was fully implemented as suggested by the
 documentation stub, and that function were called with these arguments:
 
-question = "What is the patient's BMI?"; available_calculators = ['Body Mass Index (BMI)', 'Ideal Body Weight (Devine)', '...55 calculators total...']
+question = "What is the patient's BMI?"; available_calculators = ['Body Mass Index (BMI)', 'Mean Arterial Pressure (MAP)', 'Ideal Body Weight (Devine)', 'Adjusted Body Weight', 'Body Surface Area (Mosteller)', 'Target Weight', 'Maintenance Fluids (4-2-1 Rule)', 'Creatinine Clearance (Cockcroft-Gault)', 'CKD-EPI GFR (2021)', 'MDRD GFR', 'Anion Gap', 'Delta Gap', 'Delta Ratio', 'Albumin Corrected Anion Gap', 'Serum Osmolality', 'Free Water Deficit', 'Sodium Correction for Hyperglycemia', 'Calcium Correction for Hypoalbuminemia', 'LDL Calculated (Friedewald)', 'Fractional Excretion of Sodium (FENa)', 'QTc (Bazett)', 'QTc (Fridericia)', 'QTc (Framingham)', 'QTc (Hodges)', 'QTc (Rautaharju)', 'CHA2DS2-VASc Score', 'HEART Score', 'Revised Cardiac Risk Index (RCRI)', "Wells' Criteria for PE", 'FIB-4 Index', 'MELD-Na Score', 'Child-Pugh Score', 'Steroid Conversion', 'CURB-65 Score', 'PSI/PORT Score', 'PERC Rule', 'SOFA Score', 'Centor Score (McIsaac)', 'FeverPAIN Score', 'SIRS Criteria', 'Glasgow-Blatchford Score (GBS)', 'HAS-BLED Score', "Wells' Criteria for DVT", 'Caprini VTE Score', 'Morphine Milligram Equivalents (MME)', 'APACHE II Score', 'Charlson Comorbidity Index (CCI)', 'Gestational Age', 'Estimated Due Date', 'Date of Conception', 'Glasgow Coma Scale (GCS)', 'HOMA-IR', 'Framingham Risk Score']
 
 Propose a possible output of the function for these inputs that is
 consistent with the documentation. Use the following output format:
@@ -46,10 +41,52 @@ include quotes around it.  Also, do not include any text other than
 the final answer between the <answer> and </answer> tags.
 
 
-CALL 2: _extract_values_two_stage (raw llm() call)
---------------------------------------------------
-For scoring systems, a medical reasoning prompt runs first.
-Then the extraction prompt:
+
+========== AGENTPROJECT: Call 1 — identify calculator ==========
+
+Consider the following documentation stub for a Python function.  Note
+that this is documentation, not a full implementation.
+
+```python
+def identify_calculator_l4(question: str, available_calculators: List[str]) -> Dict[str, Any]:
+    """
+    Identify which medical calculator is needed based on the question.
+
+    Analyze the question and match it to one of the available calculators.
+
+    Return:
+    {
+        "calculator_name": "exact name from the list",
+        "confidence": 0.0-1.0,
+        "reasoning": "brief explanation"
+    }
+    """
+    ...
+```
+
+Imagine that this function was fully implemented as suggested by the
+documentation stub, and that function were called with these arguments:
+
+question = "What is the patient's BMI?"; available_calculators = ['Body Mass Index (BMI)', 'Mean Arterial Pressure (MAP)', 'Ideal Body Weight (Devine)', 'Adjusted Body Weight', 'Body Surface Area (Mosteller)', 'Target Weight', 'Maintenance Fluids (4-2-1 Rule)', 'Creatinine Clearance (Cockcroft-Gault)', 'CKD-EPI GFR (2021)', 'MDRD GFR', 'Anion Gap', 'Delta Gap', 'Delta Ratio', 'Albumin Corrected Anion Gap', 'Serum Osmolality', 'Free Water Deficit', 'Sodium Correction for Hyperglycemia', 'Calcium Correction for Hypoalbuminemia', 'LDL Calculated (Friedewald)', 'Fractional Excretion of Sodium (FENa)', 'QTc (Bazett)', 'QTc (Fridericia)', 'QTc (Framingham)', 'QTc (Hodges)', 'QTc (Rautaharju)', 'CHA2DS2-VASc Score', 'HEART Score', 'Revised Cardiac Risk Index (RCRI)', "Wells' Criteria for PE", 'FIB-4 Index', 'MELD-Na Score', 'Child-Pugh Score', 'Steroid Conversion', 'CURB-65 Score', 'PSI/PORT Score', 'PERC Rule', 'SOFA Score', 'Centor Score (McIsaac)', 'FeverPAIN Score', 'SIRS Criteria', 'Glasgow-Blatchford Score (GBS)', 'HAS-BLED Score', "Wells' Criteria for DVT", 'Caprini VTE Score', 'Morphine Milligram Equivalents (MME)', 'APACHE II Score', 'Charlson Comorbidity Index (CCI)', 'Gestational Age', 'Estimated Due Date', 'Date of Conception', 'Glasgow Coma Scale (GCS)', 'HOMA-IR', 'Framingham Risk Score']
+
+Propose a possible output of the function for these inputs that is
+consistent with the documentation.  Use the following output format:
+
+<thought>
+ANY THOUGHTS
+</thought>
+<answer>
+FINAL ANSWER
+</answer>
+
+If your answer is x, show it as it would printed by a Python
+interpreter called by print(x). Specifically if x is a string do NOT
+include quotes around it.  Also, do not include any text other than
+the final answer between the <answer> and </answer> tags.
+
+
+
+========== SECRETAGENT: Call 2 — extract values ==========
 
 Extract values from the patient note for the Body Mass Index (BMI) calculator.
 
@@ -60,26 +97,73 @@ Calculate Body Mass Index.
 
     Input:
         weight_kg: Patient weight in kilograms (e.g., 80.0)
+            - If given in lbs, convert: lbs * 0.453592 = kg
         height_cm: Patient height in centimeters (e.g., 175.0)
+            - If given in feet/inches, convert: (feet * 12 + inches) * 2.54 = cm
+            - If given in meters, convert: meters * 100 = cm
+
+    Output:
+        float: BMI value (e.g., 26.12)
+            - Underweight: < 18.5
+            - Normal: 18.5-24.9
+            - Overweight: 25-29.9
+            - Obese: >= 30
+
+    Example:
+        >>> bmi(weight_kg=80.0, height_cm=175.0)
+        26.122
+    
 
 PATIENT NOTE:
 A 70-year-old male weighing 80 kg, height 175 cm.
 
 INSTRUCTIONS:
-- Extract numeric values with proper units
-- Convert units as needed
-- For sex: "man"/"male"/"he" -> "male"
+- Extract numeric values with proper units (age in years, weight in kg, height in cm)
+- Convert units as needed (lbs→kg: ×0.453592, feet/inches→cm)
+- For sex: "man"/"male"/"he" → "male", "woman"/"female"/"she" → "female"
+- For boolean conditions: True if present, False if absent
 
 Return ONLY valid JSON:
-{"extracted": {"param_name": value, ...}, "missing": [...]}
+{"extracted": {"param_name": value, ...}, "missing": ["required values not found"]}
 
-COMPUTATION (no LLM):
---------------------------------------------------
-If extraction succeeds:
-  compute_official("Body Mass Index (BMI)", {"weight": [80, "kg"], ...})
-  -> deterministic Python -> 26.122
 
-FALLBACK (if pipeline fails):
---------------------------------------------------
-Calls simulate_medical_value(patient_note, question)
-IDENTICAL to the L1 prompt.
+========== AGENTPROJECT: Call 2 — extract values ==========
+
+Extract values from the patient note for the Body Mass Index (BMI) calculator.
+
+OFFICIAL CALCULATOR IMPLEMENTATION (reference for parameter names):
+```python
+def bmi_explanation(input_parameters):
+    weight = input_parameters["weight"]
+    height = input_parameters["height"]
+    # ... convert units ...
+    bmi = weight_kg / (height_m ** 2)
+    return {"Explanation": ..., "Answer": round(bmi, 2)}
+```
+
+PATIENT NOTE:
+A 70-year-old male weighing 80 kg, height 175 cm.
+
+EXTRACTION INSTRUCTIONS:
+
+1. **Parameter Names**: Use EXACT parameter names from the official implementation
+2. **NUMERIC values ALWAYS with units**:
+   - age → [actual_age_number, "years"] e.g., [33, "years"], [68, "years"]
+   - weight → [value, "kg"] or convert lbs to kg
+   - height → [value, "cm"] or convert feet/inches to cm
+   - Lab values → [value, "unit"] e.g., [1.2, "mg/dL"], [140, "mmol/L"]
+3. **Boolean conditions**: Return True if present, False if absent
+
+COMMON CONVERSIONS:
+- Weight: lbs × 0.453592 = kg
+- Height: (feet × 30.48) + (inches × 2.54) = cm
+- Sex: "man/male/he/him/Mr." → "Male", "woman/female/she/her" → "Female"
+
+Return ONLY valid JSON:
+{"extracted": {"age": [numeric_value, "years"], "param_name": value, ...}, "missing": ["required values not found"], "inferred": ["conditions inferred from clinical findings"]}
+
+
+========== BOTH: Computation (no LLM) ==========
+
+If extraction succeeds, Python computes the result.
+If pipeline fails, both fall back to their L1 prompt.
