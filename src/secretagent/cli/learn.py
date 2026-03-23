@@ -8,6 +8,10 @@ from secretagent.learn.baselines import RoteLearner
 app = typer.Typer()
 _EXTRA_ARGS = {"allow_extra_args": True, "allow_interspersed_args": False}
 
+@app.callback()
+def main():
+    """Learn implementations from recorded interface calls."""
+
 @app.command(context_settings=_EXTRA_ARGS)
 def rote(
     ctx: typer.Context,

@@ -72,6 +72,10 @@ class LearnedFunctionFactory(Implementation.Factory):
     source config yamls. The bound function calls the learned function
     first, falling back to the backoff implementation when the learned
     function returns None.
+
+    Examples:
+      foo.implement_via('learned', learner='rote')
+      foo.implement_via('learned', learner='rote', backoff=True)
     """
 
     def build_fn(self, interface: Interface, learner: str,

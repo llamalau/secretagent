@@ -38,16 +38,16 @@ def test_quickstart_interfaces_registered():
     assert qs.translate_structured.name == 'translate_structured'
 
 
-def test_quickstart_translate_has_implementation():
-    """translate should be bound to simulate after import."""
+def test_quickstart_translate_not_bound_at_import():
+    """translate should not be bound after import (bound in __main__ only)."""
     qs = _import_quickstart()
-    assert qs.translate.implementation is not None
+    assert qs.translate.implementation is None
 
 
-def test_quickstart_translate_structured_has_implementation():
-    """translate_structured should be bound to simulate_pydantic after import."""
+def test_quickstart_translate_structured_not_bound_at_import():
+    """translate_structured should not be bound after import (bound in __main__ only)."""
     qs = _import_quickstart()
-    assert qs.translate_structured.implementation is not None
+    assert qs.translate_structured.implementation is None
 
 
 def test_quickstart_translate_structured_return_type():
@@ -70,6 +70,7 @@ def _reasonable(french_translation: str) -> bool:
 def test_quickstart_translate_returns_reasonable_string():
     """translate should return a non-empty string."""
     qs = _import_quickstart()
+    qs.translate.implement_via('simulate', llm={'model': qs.DEFAULT_MODEL})
     with config.configuration(cachier={'enable_caching':False}):
         result = qs.translate("Hello, how are you?")
     assert isinstance(result, str)
@@ -81,6 +82,7 @@ def test_quickstart_translate_returns_reasonable_string():
 def test_quickstart_translate_structured_returns_reasonable_model():
     """translate_structured should return a FrenchEnglishTranslation."""
     qs = _import_quickstart()
+    qs.translate_structured.implement_via('simulate_pydantic', llm={'model': qs.DEFAULT_MODEL})
     with config.configuration(cachier={'enable_caching':False}):
         result = qs.translate_structured("Hello, how are you?")
     assert isinstance(result, qs.FrenchEnglishTranslation)

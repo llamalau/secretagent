@@ -9,9 +9,14 @@
      information from the stack trace
    * move expt.py into core
 
+## Learning
+
+ * You can't filter cases used for distillation in any way - by
+   verifiable rewards is an obvious one.
+
 ## In-context examples for simulate factory.
 
-No easy way to do this - Jerry Yan on it
+Should document as another learning approach.
 
 ## Simplify expt.py
 
@@ -57,6 +62,7 @@ Add a learn/distill_pot.py
 
 ## Code quality/etc
 
+ * Some typehints fail
  * More guidance for claude/devs on defense programming
  * Standardize implement strategies: [un]structured_baseline, pot, workflow, react
 

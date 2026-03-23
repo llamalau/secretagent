@@ -6,7 +6,6 @@ import pprint
 import textwrap
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Optional
 
 from secretagent.learn.base import Learner
 

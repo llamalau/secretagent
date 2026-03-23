@@ -1,0 +1,31 @@
+llm:
+  model: claude-haiku-4-5-20251001
+
+cachier:
+  cache_dir: llm_cache
+
+evaluate:
+  result_dir: results
+  expt_name: DEFAULT
+
+dataset:
+  domain: airline   # airline | nba | tax
+  complexity: all   # all | 0 | 1 | 2
+  shuffle_seed: 137
+  n: 30
+
+ptools:
+  extract_airline_params:
+    method: simulate
+  extract_tax_params:
+    method: simulate
+  extract_nba_params:
+    method: simulate
+  compute_airline_calculator:
+    method: direct
+    fn: ptools._airline_calc_fn
+  compute_tax_calculator:
+    method: direct
+    fn: ptools._tax_calc_fn
+  compute_rulearena_answer:
+    method: DEFAULT

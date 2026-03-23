@@ -1,3 +1,29 @@
+# Changes - March 22
+
+There is a very simple and barely-tested example of a learner now, in
+the Makefile targets of `benchmarks/sports_understanding`.
+
+To learn a new implementation of some interface `foo` you need to
+
+ * Run an evaluation on the **training** split using some
+implementation strategy that includes running some implementation of
+`foo`, and the `evaluate.record_details=true` flag set.  This
+generates distillation data for `foo` (i.e., input-output pairs).
+Those results are filed in a directort specified by
+`evaluate.result_dir` (in the Makefile `recordings`).
+
+* Run a cli to do the learning.  That will collect the distillation
+data into a working directory specified by --train-dir (in the
+Makefile, `training`) and write the result of learning as a Python
+function under `training/*foo__rote`.
+
+* Configure `foo` with the learned implementation, by using
+`foo.implement_via('learned',learner='rote',backoff=True)` or the
+corresponding config options.  This will use rote learning to bypass
+the original implementation and back off to the implementation used to
+generate distillation data when the rote-learned function returns
+None.
+
 # Changes - March 13-Mar 18
 
 ## Documentation and examples
