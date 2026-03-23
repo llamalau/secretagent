@@ -11,6 +11,7 @@ alongside the output files.
 
 import datetime
 import os
+import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from pathlib import Path
@@ -72,16 +73,16 @@ def filter_paths(paths: Sequence[str | Path], latest: int = 0, dotlist: list[str
     """
     def _normalize(file_or_dir: str | Path) -> Path:
         p = Path(file_or_dir)
-        result = p.parent if p.is_file() else p
-        if not (p / 'config.yaml').exists():
-            raise ValueError(f'No config.yaml in {p}')
-        return result
+        return p.parent if p.is_file() else p
     norm_paths: list[Path] = [_normalize(p) for p in paths]
     # normalize the dotlist
     constraints = set(config.to_dotlist(OmegaConf.from_dotlist(dotlist)))
     by_tag = defaultdict(list)
-    # go through paths most recent first
+    # go through paths most recent first, skipping dirs without config.yaml
     for p in sorted(norm_paths, reverse=True):
+        if not (p / 'config.yaml').exists():
+            warnings.warn(f'No config.yaml in {p}, skipping')
+            continue
         cfg_for_p = config.load_yaml_cfg(p / 'config.yaml')
         active = set(config.to_dotlist(cfg_for_p))
         config.sanity_check('filter_paths', constraints, cfg_for_p)

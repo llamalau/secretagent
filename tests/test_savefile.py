@@ -147,16 +147,18 @@ def test_filter_paths_empty_list(result_dir):
     assert dirs == []
 
 
-def test_filter_paths_rejects_non_dirs(result_dir):
+def test_filter_paths_skips_non_dirs(result_dir):
     (result_dir / 'stray_file.txt').write_text('hello')
-    with pytest.raises(ValueError, match='No config.yaml'):
-        savefile.filter_paths(_all_subdirs(result_dir))
+    with pytest.warns(UserWarning, match='No config.yaml'):
+        dirs = savefile.filter_paths(_all_subdirs(result_dir))
+    assert dirs == []
 
 
-def test_filter_paths_rejects_dirs_without_config(result_dir):
+def test_filter_paths_skips_dirs_without_config(result_dir):
     (result_dir / 'no_config_dir').mkdir()
-    with pytest.raises(ValueError, match='No config.yaml'):
-        savefile.filter_paths(_all_subdirs(result_dir))
+    with pytest.warns(UserWarning, match='No config.yaml'):
+        dirs = savefile.filter_paths(_all_subdirs(result_dir))
+    assert dirs == []
 
 
 def test_filter_paths_sorted_by_tag_then_newest(result_dir):
