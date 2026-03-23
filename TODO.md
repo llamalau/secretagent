@@ -36,6 +36,9 @@ Assuming data splits in BENCHMARK/data/split.json as a serialized Dataset.
 
  * Run experiments in sports_understanding
      * use smaller models till the task gets "interesting"?
+       * even with deepseek unstructured_baseline is 69, pot 72, react 65
+	   * react often runs out of retries
+       * unstructured_baseline has trouble finding final answer
 
 ## Learning methods
 
