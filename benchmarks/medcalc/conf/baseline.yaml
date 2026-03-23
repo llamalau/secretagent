@@ -1,7 +1,7 @@
 # L0: Baseline — raw prompt_llm, no structure
 llm:
   model: together_ai/Qwen/Qwen3.5-9B
-  max_tokens: 16384
+  max_tokens: 4096
 
 cachier:
   cache_dir: llm_cache
