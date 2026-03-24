@@ -17,7 +17,7 @@ Or via config::
         task_description: "Solve the problem by ..."
 """
 
-from typing import Any, Callable
+from typing import Callable
 
 from secretagent import config
 from secretagent.core import (

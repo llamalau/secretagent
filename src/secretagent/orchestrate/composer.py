@@ -105,8 +105,6 @@ def compose_with_retry(
     Returns:
         (code, attempt) tuple where attempt is 1-indexed (for pass@k reporting)
     """
-    from secretagent.orchestrate.pipeline import Pipeline
-
     max_retries = max_retries or config.get('orchestrate.max_retries', 3)
     model = model or config.require('orchestrate.model')
 
