@@ -89,19 +89,6 @@ This project is heavily configuration-driven, like most ML systems.
  * `cachier.cache_dir` — directory for cachier's on-disk cache
  * Other `cachier.*` keys are passed through to `@cachier()` (e.g. `stale_after`, `allow_none`)
 
-### Using configurations in code
-
- * By convention:
-   * Functions generally access the global config, rather than passing
-     down pieces of it as arguments. 
-   * Fail early when required parameters are missing: When a
-	 configuration parameter is needed by a subroutine, the caller
-     should access that param with 'config.require' and pass down the
-     required values as a parameter.
-   * For tests or demos that rely on configuration settings, don't
-     modify the global config.  Instead use the `with configuration`
-     context manager.
-
 ## Caching
 
 Calls to llm models should be routed thru litellm, usually through
@@ -110,13 +97,4 @@ other stats (e.g., input/output tokens and cost).
 
 ## CLI tools
 
-CLI tools live in `src/secretagent/cli/` and are run as modules with `uv run -m`.
-They accept `--help` for full usage. 
-
- * **costs** — summarize LLM costs from the cachier cache
-
-       # Summarize costs from a specific cache directory
-       uv run -m secretagent.cli.costs benchmarks/sports_understanding/llm_cache
-
-       # Use the configured cachier.cache_dir from a config file
-       uv run -m secretagent.cli.costs --config-file conf.yaml
+See @docs/CLI.md

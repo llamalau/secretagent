@@ -13,9 +13,7 @@
  * You can't filter cases used for distillation in any way - by
    verifiable rewards is an obvious one.
 
-## In-context examples for simulate factory.
-
-Should document as another learning approach.
+ * Should set up in-context examples as another learning approach.
 
 ## Caching
 
@@ -32,15 +30,7 @@ Should document as another learning approach.
 
 ## Learning methods
 
-Start with distilling react traces.
-
-Add a src/secretagent/learn subdirectory
-
-Add learn/baselines.py
-  RoteLearner(prob_threshold)
-   - report estimated coverage and accuracy
-   - return the learned code as a loadable python function
- Test this on the zero-shot post process and `consistent_sports`
+Thoughts on distilling react traces.
 
 Add a learn/distill_pot.py
  * takes every pot function for every example
@@ -49,9 +39,8 @@ Add a learn/distill_pot.py
  * uses ast to rename all the variables to v01, v02, ...
  * hashes them to get a smaller set of functions
  * computes coverage of each function (correct/incorrect)
- * does some sort of greedy set cover
- * incrementally calls a simulated interface to refactor the workflows
-   into one program
+ * does some sort of greedy set cover or incrementally calls a
+   simulated interface to refactor the workflows into one program
 
 ## Code quality/etc
 
@@ -59,7 +48,7 @@ Add a learn/distill_pot.py
  * More guidance for claude/devs on defense programming
  * Standardize implement strategies: [un]structured_baseline, pot, workflow, react
 
-## Known issues
+## Known minor bugs
 
  * Running the simulate_pydantic with tools leads to a bunch of
    litellm task warnings, which are meaningless but annoying and

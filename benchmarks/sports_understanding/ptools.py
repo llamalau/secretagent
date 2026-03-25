@@ -1,8 +1,9 @@
 """A demo of secretagent, based on the 'sports_understanding' task in
 BBH.
 
-These tools were derived from the program trace prompt 'mock' for
-sports_understanding in https://github.com/wwcohen/doctest-prompting.
+Backstory: These tools were derived from the program trace prompt
+'mock' for sports_understanding in
+https://github.com/wwcohen/doctest-prompting.
 
 """
 
