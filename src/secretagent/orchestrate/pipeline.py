@@ -33,7 +33,7 @@ class Pipeline:
         Wraps the code body in the entry_signature to create a proper
         function, then exec's it in a namespace containing the ptools.
         """
-        indented_body = textwrap.indent(code, '    ')
+        indented_body = textwrap.indent(textwrap.dedent(code), '    ')
         func_src = f'{entry_signature}\n{indented_body}'
 
         func_name = entry_signature.split('(')[0].replace('def ', '').strip()
