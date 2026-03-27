@@ -187,7 +187,6 @@ class PromptLLMFactory(Implementation.Factory):
                 return answer
         return result_fn
 
-
 def _extract_answer(return_type, text, answer_pattern):
     """Extract and type-cast the answer from LLM output."""
     if answer_pattern is None and return_type is str:
