@@ -345,6 +345,12 @@ class PoTFactory(Implementation.Factory):
 
         template = _load_template('program_of_thought.txt')
         prompt = template.substitute(**template_bindings)
+        if inject_args:
+            prompt = prompt.replace(
+                'Start the code block by initializing a variable for each input.  '
+                'It is ESSENTIAL\nthat the code is able to be run independently.',
+                'The input variables are already set in the execution environment. '
+                'Use them directly in your code.')
         return prompt
 
 
