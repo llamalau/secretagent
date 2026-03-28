@@ -1,5 +1,6 @@
-# Default config — same as baseline.yaml
-# Use --config-file conf/<experiment>.yaml for other experiments.
+# Baseline: simulate_pydantic agent with FHIR tools (matches MedAgentBench paper)
+# The pydantic-ai agent handles multi-turn tool calling to interact with the
+# FHIR server via fhir_get and fhir_post.
 llm:
   model: together_ai/deepseek-ai/DeepSeek-V3.1
   max_tokens: 2048
