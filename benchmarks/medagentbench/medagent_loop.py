@@ -19,6 +19,17 @@ from secretagent.llm_util import echo_boxed
 
 import fhir_tools
 
+
+def _completion_with_backoff(**kw):
+    """Retry completion with exponential backoff for rate limits."""
+    for attempt in range(5):
+        try:
+            return completion(**kw)
+        except Exception as e:
+            if attempt == 4:
+                raise
+            time.sleep(2 ** attempt)
+
 # Exact system prompt from the original MedAgentBench paper
 _PROMPT_TEMPLATE = """You are an expert in using FHIR functions to assist medical professionals. You are given a question and a set of possible functions. Based on the question, you will need to make one or more function/tool calls to achieve the purpose.
 
@@ -91,7 +102,7 @@ def medagent_loop(instruction: str, context: str,
     for round_idx in range(max_round):
         # Call LLM
         start = time.time()
-        response = completion(model=model, messages=messages, max_tokens=max_tokens)
+        response = _completion_with_backoff(model=model, messages=messages, max_tokens=max_tokens)
         latency = time.time() - start
 
         raw = response.choices[0].message.content or ''
@@ -241,7 +252,7 @@ def codeact_loop(instruction: str, context: str) -> list:
 
     for attempt in range(max_passes):
         start = time.time()
-        response = completion(model=model, messages=messages, max_tokens=max_tokens)
+        response = _completion_with_backoff(model=model, messages=messages, max_tokens=max_tokens)
         latency = time.time() - start
 
         raw = response.choices[0].message.content or ''
