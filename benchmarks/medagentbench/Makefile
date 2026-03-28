@@ -18,6 +18,9 @@ pot:
 pipeline:
 	uv run python expt.py run --config-file conf/pipeline.yaml
 
+faithful:
+	uv run python expt.py run --config-file conf/faithful.yaml
+
 # ── Quick tests (single case) ───────────────────────────────────────
 
 quick-test:
@@ -31,6 +34,9 @@ quick-test-pot:
 
 quick-test-pipeline:
 	uv run python expt.py quick-test --config-file conf/pipeline.yaml dataset.n=1
+
+quick-test-faithful:
+	uv run python expt.py quick-test --config-file conf/faithful.yaml dataset.n=1
 
 # ── Results ──────────────────────────────────────────────────────────
 
