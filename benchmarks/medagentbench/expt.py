@@ -241,9 +241,10 @@ app = typer.Typer()
 _EXTRA_ARGS = {"allow_extra_args": True, "allow_interspersed_args": False}
 
 
-def setup(dotlist: list[str]) -> tuple[Dataset, Any]:
+def setup(dotlist: list[str], config_file: Path | None = None) -> tuple[Dataset, Any]:
     """Load config, verify FHIR server, load dataset, bind implementations."""
-    config_file = _BENCHMARK_DIR / 'conf' / 'conf.yaml'
+    if config_file is None:
+        config_file = _BENCHMARK_DIR / 'conf' / 'baseline.yaml'
     config.configure(yaml_file=config_file, dotlist=dotlist)
     config.set_root(_BENCHMARK_DIR)
 
@@ -272,13 +273,14 @@ def setup(dotlist: list[str]) -> tuple[Dataset, Any]:
 
 
 @app.command(context_settings=_EXTRA_ARGS)
-def run(ctx: typer.Context):
+def run(ctx: typer.Context,
+        config_file: Path = typer.Option(None, help="Config YAML file")):
     """Run MedAgentBench evaluation.
 
     Extra args are parsed as config overrides in dot notation, e.g.:
-        uv run python expt.py run llm.model=claude-haiku-4-5-20251001
+        uv run python expt.py run --config-file conf/pot.yaml dataset.n=10
     """
-    dataset, interface = setup(ctx.args)
+    dataset, interface = setup(ctx.args, config_file)
 
     fhir_base = config.get('fhir.api_base', 'http://localhost:8080/fhir/')
     evaluator = MedAgentBenchEvaluator(fhir_base)
@@ -302,9 +304,10 @@ def run(ctx: typer.Context):
 
 
 @app.command(context_settings=_EXTRA_ARGS)
-def quick_test(ctx: typer.Context):
+def quick_test(ctx: typer.Context,
+               config_file: Path = typer.Option(None, help="Config YAML file")):
     """Quick test on a single case with full echo enabled."""
-    dataset, interface = setup(ctx.args)
+    dataset, interface = setup(ctx.args, config_file)
     pprint.pprint(config.GLOBAL_CONFIG)
 
     example = dataset.cases[0]
