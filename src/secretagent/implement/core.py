@@ -253,10 +253,6 @@ class PoTFactory(Implementation.Factory):
         SAFE_BUILTINS = {
             'float': float, 'int': int, 'round': round, 'abs': abs,
             'str': str, 'bool': bool, 'min': min, 'max': max, 'sum': sum,
-            'len': len, 'list': list, 'dict': dict, 'tuple': tuple,
-            'sorted': sorted, 'enumerate': enumerate, 'range': range,
-            'zip': zip, 'isinstance': isinstance, 'type': type,
-            'any': any, 'all': all, 'map': map, 'filter': filter,
         }
         tool_functions.update(SAFE_BUILTINS)
         python_executor.custom_tools = tool_functions
