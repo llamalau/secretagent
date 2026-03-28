@@ -234,10 +234,10 @@ class MedAgentBenchEvaluator(Evaluator):
                     # with native types (int/float, not strings of numbers).
                     # pydantic-ai returns list[str], so convert numeric strings
                     # back to numbers to match the FINISH([60, 2.3]) format.
-                    if isinstance(predicted_output, list):
-                        result_str = json.dumps([_to_native_type(v) for v in predicted_output])
-                    else:
-                        result_str = str(predicted_output)
+                    # PoT may return a bare value — wrap it in a list.
+                    if not isinstance(predicted_output, list):
+                        predicted_output = [predicted_output]
+                    result_str = json.dumps([_to_native_type(v) for v in predicted_output])
                     post_log = metadata.get('post_log', [])
                     task_result = _TaskResult(result_str, post_log)
                     correct = grader(raw_item, task_result, self.fhir_api_base) is True
