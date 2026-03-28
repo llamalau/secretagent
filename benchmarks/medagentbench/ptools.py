@@ -1,10 +1,10 @@
 """MedAgentBench ptools: interfaces for solving medical EHR tasks via FHIR API.
 
 Supports four experiment levels:
-  - baseline: simulate_pydantic with fhir_get + fhir_post tools (paper's protocol)
-  - simulate: LLM predicts answer from docstring alone (no FHIR access)
-  - pot: program_of_thought generates Python code with FHIR tool access
-  - pipeline: Python-orchestrated read→act stages with specialist sub-interfaces
+  L0 paper_baseline: multi-turn text loop (GET/POST/FINISH)
+  L1 structured_tools: pydantic-ai structured tool calling
+  L2 pot: single-pass code generation with FHIR tools
+  L3 codeact: iterative code generation with error feedback
 """
 
 from secretagent.core import interface
@@ -44,7 +44,7 @@ def solve_medical_task(instruction: str, context: str) -> list[str]:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# FHIR tool interfaces for PoT (L3)
+# FHIR tool interfaces for PoT (L2)
 #
 # These are @interface wrappers around the plain fhir_tools functions.
 # PoTFactory only includes tools in the prompt if they are Interface
@@ -76,101 +76,3 @@ def fhir_post_iface(url: str, payload: str) -> str:
     or an error message if the JSON payload is invalid.
     """
     ...
-
-
-# ──────────────────────────────────────────────────────────────────────
-# Sub-interfaces for pipeline experiment (L4)
-# ──────────────────────────────────────────────────────────────────────
-
-@interface
-def search_fhir_data(instruction: str, context: str) -> str:
-    """Read phase: query the FHIR server to gather all information needed
-    for the given medical task.
-
-    You have access to fhir_get(url) to send GET requests to the FHIR server.
-    The context contains the FHIR API base URL and available endpoint definitions.
-
-    Make one or more GET requests to retrieve patient demographics, lab results,
-    vitals, medication orders, or other relevant data. Do NOT make any POST
-    requests — this is a read-only phase.
-
-    Return a structured summary including:
-    - Exact numeric values with units (e.g. "magnesium: 1.3 mg/dL")
-    - Exact timestamps in ISO format
-    - Patient FHIR resource references (e.g. "Patient/S6315806")
-    - Any relevant status codes or identifiers
-    Be precise — downstream processing depends on exact values.
-    """
-    ...
-
-
-@interface
-def act_on_results(instruction: str, context: str, search_results: str) -> list[str]:
-    """Act phase: given the FHIR search results, determine what actions are
-    needed and return the final answers.
-
-    You have access to both fhir_get(url) and fhir_post(url, payload) tools.
-    Use fhir_get if you need additional data not covered by search_results.
-    Use fhir_post to create FHIR resources (medication orders, service
-    requests, vital observations, etc.).
-
-    Based on the instruction and search results:
-    1. Decide if any POST operations are needed (e.g., ordering medications,
-       creating referrals, recording vitals)
-    2. If POST operations are needed, construct the correct FHIR resource
-       payloads and submit them
-    3. Return the final answers as a list of strings
-
-    Only make POST requests if the task explicitly requires creating or
-    ordering something. For read-only tasks, just return the answer.
-
-    IMPORTANT: Return ONLY the exact values requested, nothing else.
-    - For numeric values: just the number (e.g. ["28"] or ["2.3"])
-    - Do NOT include explanations, descriptions, or units.
-    - If no value is found, return ["-1"].
-    """
-    ...
-
-
-@interface
-def simulate_medical_task(instruction: str, context: str) -> list[str]:
-    """Fallback: solve a medical EHR task using FHIR tools.
-
-    Same as solve_medical_task — used as a fallback when the pipeline
-    fails. Bound to simulate_pydantic with both fhir_get and fhir_post.
-
-    IMPORTANT: Return ONLY the exact values requested, nothing else.
-    - For numeric values: just the number (e.g. ["28"] or ["2.3"])
-    - Do NOT include explanations, descriptions, or units.
-    - If no value is found, return ["-1"].
-    """
-    ...
-
-
-# ──────────────────────────────────────────────────────────────────────
-# read_act workflow (L3) — uses medagent_loop with restricted actions
-# ──────────────────────────────────────────────────────────────────────
-
-def read_act_workflow(instruction: str, context: str) -> list[str]:
-    """L3 read_act: two-phase text loop with restricted actions per phase.
-
-    Stage 1 (Read): GET + FINISH only — gather FHIR data
-    Stage 2 (Act): POST + GET + FINISH — execute actions with read data as context
-    Fallback: full loop if read phase finds nothing
-    """
-    from medagent_loop import medagent_loop
-
-    # Stage 1: Read — only GET allowed, return raw data
-    search_results = medagent_loop(
-        instruction, context,
-        allowed_actions=('GET', 'FINISH'), max_round=4, return_raw=True)
-
-    if search_results and search_results != '(no data retrieved)':
-        # Stage 2: Act — inject search results into context
-        enriched_context = context + f'\n\nFHIR data from read phase:\n{search_results}'
-        return medagent_loop(
-            instruction, enriched_context,
-            allowed_actions=('GET', 'POST', 'FINISH'), max_round=4)
-    else:
-        # No read needed (pure write task) — full loop
-        return medagent_loop(instruction, context)

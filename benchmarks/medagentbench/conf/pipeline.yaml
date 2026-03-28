@@ -1,13 +1,13 @@
-# L3 Read-Act: two-phase text loop using medagent_loop with restricted actions.
-# Stage 1 (Read): GET + FINISH only — gather FHIR data (max 4 rounds)
-# Stage 2 (Act): GET + POST + FINISH — execute actions with read data (max 4 rounds)
-# Fallback: full loop if read phase finds nothing (pure write tasks)
+# L3 CodeAct: iterative code generation with error feedback.
+# Generates Python code, executes in sandbox, if error re-prompts
+# with error context. Up to 8 passes. Like PoT but with retry loop.
 llm:
   model: together_ai/deepseek-ai/DeepSeek-V3.1
-  max_tokens: 2048
+  max_tokens: 4096
 
 cachier:
-  enable_caching: false
+  cache_dir: llm_cache
+  enable_caching: true
 
 fhir:
   api_base: "http://localhost:8080/fhir/"
@@ -15,7 +15,7 @@ fhir:
 
 evaluate:
   result_dir: results
-  expt_name: read_act
+  expt_name: codeact
   record_details: false
   max_workers: 10
 
@@ -25,4 +25,4 @@ dataset:
 ptools:
   solve_medical_task:
     method: direct
-    fn: ptools.read_act_workflow
+    fn: medagent_loop.codeact_loop

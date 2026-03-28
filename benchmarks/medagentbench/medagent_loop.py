@@ -183,3 +183,106 @@ def medagent_loop(instruction: str, context: str,
         kw={}, output='**max rounds reached**', stats=total_stats,
         step_info={'history': history, 'rounds': max_round, 'status': 'TASK_LIMIT_REACHED'})
     return []
+
+
+# ──────────────────────────────────────────────────────────────────────
+# CodeAct: iterative code generation with error feedback
+# ──────────────────────────────────────────────────────────────────────
+
+_CODEACT_PROMPT = """You are an expert in using FHIR functions to assist medical professionals.
+Write Python code to solve the task below. You have these tools available as functions:
+
+- fhir_get(url: str) -> str: Send a GET request to the FHIR server. Returns JSON string.
+- fhir_post(url: str, payload: str) -> str: Send a POST request. payload is a JSON string.
+- final_answer(result): Call this with your final answer to return it.
+
+You also have: json, re, and all standard Python builtins.
+
+FHIR API base URL: {api_base}
+
+Context: {context}
+Question: {question}
+
+Write Python code that solves this task. Call final_answer(result) as the last line.
+Output ONLY a ```python``` code block."""
+
+
+def codeact_loop(instruction: str, context: str) -> list:
+    """CodeAct: iterative code generation with error feedback, up to 8 passes."""
+    import re as re_mod
+    from smolagents.local_python_executor import LocalPythonExecutor, BASE_PYTHON_TOOLS
+
+    model = config.require('llm.model')
+    max_passes = int(config.get('fhir.max_round', 8))
+    max_tokens = int(config.get('llm.max_tokens', 4096))
+    fhir_base = config.get('fhir.api_base', 'http://localhost:8080/fhir/')
+
+    # Extract task context
+    task_context = ''
+    marker = 'Task context: '
+    if marker in context:
+        task_context = context[context.index(marker) + len(marker):]
+
+    # Set up sandbox
+    executor = LocalPythonExecutor(additional_authorized_imports=['json', 're'])
+    executor.custom_tools = {
+        'fhir_get': fhir_tools.fhir_get,
+        'fhir_post': fhir_tools.fhir_post,
+        'instruction': instruction,
+        'context': context,
+    }
+    executor.static_tools = {**BASE_PYTHON_TOOLS, 'final_answer': lambda x: x}
+
+    prompt = _CODEACT_PROMPT.format(
+        api_base=fhir_base, context=task_context, question=instruction)
+    messages = [{"role": "user", "content": prompt}]
+
+    total_stats = dict(input_tokens=0, output_tokens=0, latency=0.0, cost=0.0)
+
+    for attempt in range(max_passes):
+        start = time.time()
+        response = completion(model=model, messages=messages, max_tokens=max_tokens)
+        latency = time.time() - start
+
+        raw = response.choices[0].message.content or ''
+        total_stats['input_tokens'] += response.usage.prompt_tokens
+        total_stats['output_tokens'] += response.usage.completion_tokens
+        total_stats['latency'] += latency
+        try:
+            total_stats['cost'] += completion_cost(completion_response=response)
+        except Exception:
+            pass
+
+        if config.get('echo.llm_output'):
+            echo_boxed(raw, f'codeact (pass {attempt})')
+
+        # Extract code from ```python``` block
+        match = re_mod.search(r'```python\n(.*?)\n```', raw, re_mod.DOTALL)
+        if not match:
+            messages.append({"role": "assistant", "content": raw})
+            messages.append({"role": "user", "content":
+                "No ```python``` code block found. Please output ONLY a ```python``` code block."})
+            continue
+
+        code = match.group(1)
+        try:
+            result = executor(code)
+            answer = result.output
+            if not isinstance(answer, list):
+                answer = [answer]
+            record.record(
+                func='solve_medical_task', args=(instruction, context),
+                kw={}, output=answer, stats=total_stats,
+                step_info={'passes': attempt + 1, 'code': code})
+            return answer
+        except Exception as ex:
+            messages.append({"role": "assistant", "content": raw})
+            messages.append({"role": "user", "content":
+                f"Code execution error:\n{ex}\n\nFix the code and try again."})
+
+    # All passes exhausted
+    record.record(
+        func='solve_medical_task', args=(instruction, context),
+        kw={}, output='**max passes reached**', stats=total_stats,
+        step_info={'passes': max_passes, 'status': 'EXHAUSTED'})
+    return []

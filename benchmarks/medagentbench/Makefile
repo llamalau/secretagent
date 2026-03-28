@@ -15,7 +15,7 @@ structured-tools:
 pot:
 	uv run python expt.py run --config-file conf/pot.yaml
 
-read-act:
+codeact:
 	uv run python expt.py run --config-file conf/pipeline.yaml
 
 # ── Quick tests (single case) ───────────────────────────────────────
@@ -29,7 +29,7 @@ quick-test-structured:
 quick-test-pot:
 	uv run python expt.py quick-test --config-file conf/pot.yaml dataset.n=1
 
-quick-test-read-act:
+quick-test-codeact:
 	uv run python expt.py quick-test --config-file conf/pipeline.yaml dataset.n=1
 
 # ── Results ──────────────────────────────────────────────────────────
