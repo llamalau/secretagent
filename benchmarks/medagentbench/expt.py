@@ -41,6 +41,28 @@ import ptools
 
 
 # ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+def _to_native_type(value):
+    """Convert a string to int or float if it looks numeric.
+
+    refsol graders compare with == against native types (e.g. [60] not ["60"]).
+    The paper's FINISH([60, 2.3]) preserves types via JSON parsing, but
+    pydantic-ai returns list[str], so we convert back.
+    """
+    if not isinstance(value, str):
+        return value
+    try:
+        # Try int first (e.g. "60" → 60)
+        f = float(value)
+        i = int(f)
+        return i if f == i else f
+    except (ValueError, OverflowError):
+        return value
+
+
+# ---------------------------------------------------------------------------
 # refsol loading
 # ---------------------------------------------------------------------------
 
@@ -209,8 +231,11 @@ class MedAgentBenchEvaluator(Evaluator):
             if grader is not None:
                 try:
                     # refsol expects results.result to be a JSON list string
+                    # with native types (int/float, not strings of numbers).
+                    # pydantic-ai returns list[str], so convert numeric strings
+                    # back to numbers to match the FINISH([60, 2.3]) format.
                     if isinstance(predicted_output, list):
-                        result_str = json.dumps(predicted_output)
+                        result_str = json.dumps([_to_native_type(v) for v in predicted_output])
                     else:
                         result_str = str(predicted_output)
                     post_log = metadata.get('post_log', [])
