@@ -278,14 +278,9 @@ class PoTFactory(Implementation.Factory):
         """Construct a prompt that calls an LLM to predict the output of the function.
         """
         if inject_args:
-            # Show truncated previews — full values are in the sandbox
-            arg_names = list(interface.annotations.keys())[:-1]
-            parts = []
-            for name, val in zip(arg_names, args):
-                r = repr(val)
-                preview = r[:200] + '...' if len(r) > 200 else r
-                parts.append(f'{name} = {preview}')
-            input_args = '\n'.join(parts)
+            # Show full values so the LLM can read them, but tell it
+            # the variables are pre-loaded — no need to copy into code.
+            input_args = interface.format_args(*args, **kw)
             input_args += ('\n\nThese variables are already available in the execution '
                            'environment. Do NOT re-assign them in your code.')
         else:
