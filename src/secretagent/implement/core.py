@@ -347,7 +347,7 @@ class PoTFactory(Implementation.Factory):
                 'Start the code block by initializing a variable for each input.  '
                 'It is ESSENTIAL\nthat the code is able to be run independently.',
                 'The input variables are already set in the execution environment. '
-                'Use them directly in your code.')
+                'Use them in your code if needed.')
         return prompt
 
 
