@@ -4,13 +4,13 @@ docker-start:
 docker-stop:
 	docker ps -q --filter ancestor=jyxsu6/medagentbench:latest | xargs -r docker stop
 
-# ── Experiments ──────────────────────────────────────────────────────
+# ── Experiments (L0–L3) ─────────────────────────────────────────────
 
-baseline:
-	uv run python expt.py run --config-file conf/baseline.yaml
+paper-baseline:
+	uv run python expt.py run --config-file conf/paper_baseline.yaml
 
-simulate:
-	uv run python expt.py run --config-file conf/simulate.yaml
+structured-tools:
+	uv run python expt.py run --config-file conf/structured_tools.yaml
 
 pot:
 	uv run python expt.py run --config-file conf/pot.yaml
@@ -18,25 +18,19 @@ pot:
 pipeline:
 	uv run python expt.py run --config-file conf/pipeline.yaml
 
-faithful:
-	uv run python expt.py run --config-file conf/faithful.yaml
-
 # ── Quick tests (single case) ───────────────────────────────────────
 
 quick-test:
-	uv run python expt.py quick-test --config-file conf/baseline.yaml dataset.n=1
+	uv run python expt.py quick-test --config-file conf/paper_baseline.yaml dataset.n=1
 
-quick-test-simulate:
-	uv run python expt.py quick-test --config-file conf/simulate.yaml dataset.n=1
+quick-test-structured:
+	uv run python expt.py quick-test --config-file conf/structured_tools.yaml dataset.n=1
 
 quick-test-pot:
 	uv run python expt.py quick-test --config-file conf/pot.yaml dataset.n=1
 
 quick-test-pipeline:
 	uv run python expt.py quick-test --config-file conf/pipeline.yaml dataset.n=1
-
-quick-test-faithful:
-	uv run python expt.py quick-test --config-file conf/faithful.yaml dataset.n=1
 
 # ── Results ──────────────────────────────────────────────────────────
 
