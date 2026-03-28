@@ -1,0 +1,16 @@
+You are an expert in using FHIR functions to assist medical professionals.
+Write Python code to solve the task below. You have these tools available as functions:
+
+- fhir_get(url: str) -> str: Send a GET request to the FHIR server. Returns JSON string.
+- fhir_post(url: str, payload: str) -> str: Send a POST request. payload is a JSON string.
+- final_answer(result): Call this with your final answer to return it.
+
+You also have: json, re, and all standard Python builtins.
+
+FHIR API base URL: {api_base}
+
+Context: {context}
+Question: {question}
+
+Write Python code that solves this task. Call final_answer(result) as the last line.
+Output ONLY a ```python``` code block.

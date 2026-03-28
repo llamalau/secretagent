@@ -16,7 +16,7 @@ pot:
 	uv run python expt.py run --config-file conf/pot.yaml
 
 codeact:
-	uv run python expt.py run --config-file conf/pipeline.yaml
+	uv run python expt.py run --config-file conf/codeact.yaml
 
 # ── Quick tests (single case) ───────────────────────────────────────
 
@@ -30,7 +30,7 @@ quick-test-pot:
 	uv run python expt.py quick-test --config-file conf/pot.yaml dataset.n=1
 
 quick-test-codeact:
-	uv run python expt.py quick-test --config-file conf/pipeline.yaml dataset.n=1
+	uv run python expt.py quick-test --config-file conf/codeact.yaml dataset.n=1
 
 # ── Results ──────────────────────────────────────────────────────────
 

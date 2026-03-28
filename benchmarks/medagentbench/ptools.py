@@ -1,4 +1,4 @@
-"""MedAgentBench ptools: interfaces for solving medical EHR tasks via FHIR API.
+"""MedAgentBench ptools: interface for solving medical EHR tasks via FHIR API.
 
 Supports four experiment levels:
   L0 paper_baseline: multi-turn text loop (GET/POST/FINISH)
@@ -9,10 +9,6 @@ Supports four experiment levels:
 
 from secretagent.core import interface
 
-
-# ──────────────────────────────────────────────────────────────────────
-# Main entry point (used by all experiments)
-# ──────────────────────────────────────────────────────────────────────
 
 @interface
 def solve_medical_task(instruction: str, context: str) -> list[str]:
@@ -46,10 +42,9 @@ def solve_medical_task(instruction: str, context: str) -> list[str]:
 # ──────────────────────────────────────────────────────────────────────
 # FHIR tool interfaces for PoT (L2)
 #
-# These are @interface wrappers around the plain fhir_tools functions.
-# PoTFactory only includes tools in the prompt if they are Interface
-# objects with implementations. Plain callables are silently omitted
-# from the prompt's tool stub listing.
+# PoTFactory only shows Interface stubs in the prompt. Plain callables
+# are invisible. These wrappers ensure fhir_get/fhir_post signatures
+# appear so the LLM knows what tools to call in generated code.
 # ──────────────────────────────────────────────────────────────────────
 
 @interface
