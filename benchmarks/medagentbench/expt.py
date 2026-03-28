@@ -18,11 +18,13 @@ Example CLI commands:
 import importlib.util
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import pandas as pd
 import pprint
+from tqdm import tqdm
 import typer
 
 _BENCHMARK_DIR = Path(__file__).parent
@@ -216,6 +218,40 @@ class MedAgentBenchEvaluator(Evaluator):
             result['rollout'] = records
             result['post_log'] = post_log
         return result
+
+    def measurements(self, dataset, interface) -> Iterator[dict[str, Any]]:
+        """Run cases, optionally in parallel via evaluate.max_workers."""
+        max_workers = int(config.get('evaluate.max_workers', 1))
+        if max_workers <= 1:
+            yield from super().measurements(dataset, interface)
+            return
+
+        # Parallel execution — skip record.recorder() (not thread-safe)
+        def run_case(example):
+            fhir_tools.clear_post_log()
+            try:
+                predicted_output = interface(*example.input_args)
+            except Exception as ex:
+                predicted_output = f'**exception raised**: {ex}'
+            post_log = fhir_tools.get_post_log()
+            eval_metadata = dict(example.metadata or {})
+            eval_metadata['post_log'] = post_log
+            metrics = self.compare_predictions(
+                predicted_output, example.expected_output, eval_metadata)
+            row = dict(
+                predicted_output=str(predicted_output),
+                expected_output=str(example.expected_output),
+                task_type=example.metadata.get('task_type', ''),
+                num_posts=len(post_log),
+                case_name=example.name,
+                **metrics,
+            )
+            return row
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(run_case, ex): ex for ex in dataset.cases}
+            for future in tqdm(as_completed(futures), total=len(futures)):
+                yield future.result()
 
     def compare_predictions(
             self, predicted_output, expected_output,

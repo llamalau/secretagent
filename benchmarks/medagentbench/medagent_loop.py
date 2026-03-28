@@ -125,7 +125,7 @@ def medagent_loop(instruction: str, context: str) -> list[str]:
             try:
                 payload = json.loads(payload_text)
                 # Log the POST for refsol grading (same as fhir_tools.fhir_post)
-                fhir_tools._post_log.append({"url": post_url, "payload": payload})
+                fhir_tools.log_post(post_url, payload)
                 feedback = ("POST request accepted and executed successfully. "
                             "Please call FINISH if you have got answers for all the questions "
                             "and finished all the requested tasks")

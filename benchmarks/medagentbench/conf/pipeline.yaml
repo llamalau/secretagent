@@ -17,7 +17,8 @@ fhir:
 evaluate:
   result_dir: results
   expt_name: read_act
-  record_details: true
+  record_details: false
+  max_workers: 10
 
 dataset:
   version: v2
