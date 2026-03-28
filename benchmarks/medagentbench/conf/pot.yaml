@@ -6,7 +6,8 @@ llm:
   max_tokens: 2048
 
 cachier:
-  enable_caching: false
+  cache_dir: llm_cache
+  enable_caching: true
 
 fhir:
   api_base: "http://localhost:8080/fhir/"
@@ -14,7 +15,8 @@ fhir:
 evaluate:
   result_dir: results
   expt_name: pot
-  record_details: true
+  record_details: false
+  max_workers: 10
 
 dataset:
   version: v2
