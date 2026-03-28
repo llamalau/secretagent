@@ -344,10 +344,10 @@ class PoTFactory(Implementation.Factory):
         prompt = template.substitute(**template_bindings)
         if inject_args:
             prompt = prompt.replace(
-                'Start the code block by initializing a variable for each input.  '
-                'It is ESSENTIAL\nthat the code is able to be run independently.',
-                'The input variables are already set in the execution environment. '
-                'Use them in your code if needed.')
+                'Start the\ncode block by initializing a variable for each input.  It is ESSENTIAL\n'
+                'that the code is able to be run independently.',
+                'The input variables are already loaded in the execution environment — '
+                'do not write them out in the code. Use them in your code if needed.')
         return prompt
 
 
