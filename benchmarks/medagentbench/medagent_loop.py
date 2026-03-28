@@ -142,8 +142,6 @@ def medagent_loop(instruction: str, context: str) -> list[str]:
                 answers = json.loads(result_str)
                 if not isinstance(answers, list):
                     answers = [answers]
-                # Convert all elements to strings for consistency
-                answers = [str(a) for a in answers]
             except (json.JSONDecodeError, TypeError):
                 answers = [result_str]
             history.append({'round': round_idx, 'action': 'FINISH', 'answers': answers})
