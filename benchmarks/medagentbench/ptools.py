@@ -32,7 +32,13 @@ def solve_medical_task(instruction: str, context: str) -> list[str]:
     dosing instructions, etc.).
 
     Use the tools to interact with the FHIR server and solve the given task.
-    Return your final answers as a list of strings.
+
+    IMPORTANT: Return ONLY the exact values requested, nothing else.
+    - For patient lookups: just the MRN (e.g. ["S6534835"])
+    - For numeric values: just the number (e.g. ["28"] or ["2.3"])
+    - For dates/times: just the ISO timestamp
+    - Do NOT include explanations, descriptions, or units in the answer list.
+    - If no value is found, return ["-1"].
     """
     ...
 
@@ -117,6 +123,11 @@ def act_on_results(instruction: str, context: str, search_results: str) -> list[
 
     Only make POST requests if the task explicitly requires creating or
     ordering something. For read-only tasks, just return the answer.
+
+    IMPORTANT: Return ONLY the exact values requested, nothing else.
+    - For numeric values: just the number (e.g. ["28"] or ["2.3"])
+    - Do NOT include explanations, descriptions, or units.
+    - If no value is found, return ["-1"].
     """
     ...
 
@@ -127,6 +138,11 @@ def simulate_medical_task(instruction: str, context: str) -> list[str]:
 
     Same as solve_medical_task — used as a fallback when the pipeline
     fails. Bound to simulate_pydantic with both fhir_get and fhir_post.
+
+    IMPORTANT: Return ONLY the exact values requested, nothing else.
+    - For numeric values: just the number (e.g. ["28"] or ["2.3"])
+    - Do NOT include explanations, descriptions, or units.
+    - If no value is found, return ["-1"].
     """
     ...
 
