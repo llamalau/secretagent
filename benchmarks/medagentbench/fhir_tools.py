@@ -2,15 +2,18 @@
 
 Provides fhir_get and fhir_post as plain callables that pydantic-ai
 can use as tools. Also manages server verification and POST logging.
+
+POST log is thread-local to support parallel case evaluation.
 """
 
 import json
+import threading
 import requests
 
 FHIR_API_BASE = "http://localhost:8080/fhir/"
 
-# Per-case POST log: cleared before each case, read after for evaluation
-_post_log: list[dict] = []
+# Thread-local storage for per-case POST log
+_local = threading.local()
 
 
 def set_api_base(base: str):
@@ -30,12 +33,19 @@ def verify_fhir_server() -> bool:
 
 def clear_post_log():
     """Clear the POST log before each evaluation case."""
-    _post_log.clear()
+    _local.post_log = []
 
 
 def get_post_log() -> list[dict]:
     """Return a copy of the POST log for evaluation."""
-    return list(_post_log)
+    return list(getattr(_local, 'post_log', []))
+
+
+def log_post(url: str, payload: dict):
+    """Append a POST entry to the thread-local log."""
+    if not hasattr(_local, 'post_log'):
+        _local.post_log = []
+    _local.post_log.append({"url": url, "payload": payload})
 
 
 def _send_get_request_raw(url, params=None, headers=None):
@@ -90,7 +100,7 @@ def fhir_post(url: str, payload: str) -> str:
         data = json.loads(payload)
     except (json.JSONDecodeError, TypeError) as e:
         return f"Invalid POST request: {e}"
-    _post_log.append({"url": url, "payload": data})
+    log_post(url, data)
     return (
         "POST request accepted and executed successfully. "
         "Please call FINISH if you have got answers for all the "
