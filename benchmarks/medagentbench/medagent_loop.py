@@ -41,10 +41,19 @@ Context: {context}
 Question: {question}"""
 
 
-def medagent_loop(instruction: str, context: str) -> list[str]:
-    """Multi-turn text loop faithfully replicating the MedAgentBench paper protocol."""
+def medagent_loop(instruction: str, context: str,
+                   allowed_actions=('GET', 'POST', 'FINISH'),
+                   max_round=None, return_raw=False) -> list[str]:
+    """Multi-turn text loop replicating the MedAgentBench paper protocol.
+
+    Args:
+        allowed_actions: which actions the agent can use (for read_act phases)
+        max_round: override max rounds (default from config)
+        return_raw: if True, return the raw conversation text instead of parsed FINISH answers
+    """
     model = config.require('llm.model')
-    max_round = int(config.get('fhir.max_round', 8))
+    if max_round is None:
+        max_round = int(config.get('fhir.max_round', 8))
     max_tokens = int(config.get('llm.max_tokens', 2048))
     fhir_base = config.get('fhir.api_base', 'http://localhost:8080/fhir/')
 
@@ -100,7 +109,13 @@ def medagent_loop(instruction: str, context: str) -> list[str]:
         # Strip markdown wrappers (Gemini quirk from original code)
         r = raw.strip().replace('```tool_code', '').replace('```', '').strip()
 
-        # Parse action
+        # Parse action (check allowed_actions for read_act phases)
+        action = 'GET' if r.startswith('GET') else 'POST' if r.startswith('POST') else 'FINISH' if r.startswith('FINISH(') else None
+        if action and action not in allowed_actions:
+            messages.append({"role": "assistant", "content": raw})
+            messages.append({"role": "user", "content": f"{action} is not available in this phase. Use: {', '.join(allowed_actions)}"})
+            continue
+
         if r.startswith('GET'):
             url = r[3:].strip() + '&_format=json'
             get_res = fhir_tools.fhir_get(url.replace('&_format=json&_format=json', '&_format=json'))
@@ -157,6 +172,12 @@ def medagent_loop(instruction: str, context: str) -> list[str]:
             break
 
     # Reached max rounds without FINISH
+    if return_raw:
+        # For read phase: return all GET responses concatenated
+        raw_data = '\n'.join(
+            m['content'] for m in messages
+            if m['role'] == 'user' and 'response from the GET' in m.get('content', ''))
+        return raw_data or '(no data retrieved)'
     record.record(
         func='solve_medical_task', args=(instruction, context),
         kw={}, output='**max rounds reached**', stats=total_stats,

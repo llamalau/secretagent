@@ -148,23 +148,29 @@ def simulate_medical_task(instruction: str, context: str) -> list[str]:
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Pipeline workflow (L4)
+# read_act workflow (L3) — uses medagent_loop with restricted actions
 # ──────────────────────────────────────────────────────────────────────
 
-def pipeline_workflow(instruction: str, context: str) -> list[str]:
-    """L4 pipeline: Python-orchestrated read→act stages.
+def read_act_workflow(instruction: str, context: str) -> list[str]:
+    """L3 read_act: two-phase text loop with restricted actions per phase.
 
-    Stage 1 (Read): search_fhir_data gathers patient data via GET requests
-    Stage 2 (Act): act_on_results decides actions and returns answers
-    Fallback: simulate_medical_task if pipeline fails
+    Stage 1 (Read): GET + FINISH only — gather FHIR data
+    Stage 2 (Act): POST + GET + FINISH — execute actions with read data as context
+    Fallback: full loop if read phase finds nothing
     """
-    try:
-        # Stage 1: Read — gather all FHIR data
-        search_results = search_fhir_data(instruction, context)
+    from medagent_loop import medagent_loop
 
-        # Stage 2: Act — decide and execute actions, return answers
-        answers = act_on_results(instruction, context, search_results)
-        return answers
-    except Exception as ex:
-        print(f'[pipeline] stage failed ({ex}), falling back to simulate')
-        return simulate_medical_task(instruction, context)
+    # Stage 1: Read — only GET allowed, return raw data
+    search_results = medagent_loop(
+        instruction, context,
+        allowed_actions=('GET', 'FINISH'), max_round=4, return_raw=True)
+
+    if search_results and search_results != '(no data retrieved)':
+        # Stage 2: Act — inject search results into context
+        enriched_context = context + f'\n\nFHIR data from read phase:\n{search_results}'
+        return medagent_loop(
+            instruction, enriched_context,
+            allowed_actions=('GET', 'POST', 'FINISH'), max_round=4)
+    else:
+        # No read needed (pure write task) — full loop
+        return medagent_loop(instruction, context)
