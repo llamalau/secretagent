@@ -5,7 +5,7 @@ from omegaconf import OmegaConf
 
 from secretagent import config
 from secretagent.core import interface, _INTERFACES
-from secretagent.implement_core import resolve_dotted, resolve_tools
+from secretagent.implement.core import resolve_dotted, resolve_tools
 
 
 @pytest.fixture(autouse=True)

@@ -49,7 +49,7 @@ from secretagent import config, record
 from secretagent.core import implement_via_config
 from secretagent.dataset import Dataset, Case
 from secretagent.evaluate import Evaluator
-import secretagent.implement_pydantic  # noqa: F401 (registers simulate_pydantic factory)
+import secretagent.implement.pydantic  # noqa: F401 (registers simulate_pydantic factory)
 
 import ptools
 

@@ -54,7 +54,7 @@ from secretagent import config
 from secretagent.core import Interface, implement_via_config
 from secretagent.dataset import Dataset, Case
 from secretagent.evaluate import Evaluator
-import secretagent.implement_pydantic  # noqa: F401 (registers simulate_pydantic factory)
+import secretagent.implement.pydantic  # noqa: F401 (registers simulate_pydantic factory)
 
 from eval_utils import (
     eval_calendar_single,

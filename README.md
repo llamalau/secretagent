@@ -40,7 +40,7 @@ You can also get structured Pydantic output:
 ```python
 from pydantic import BaseModel
 from secretagent.core import implement_via
-import secretagent.implement_pydantic  # registers simulate_pydantic factory
+import secretagent.implement.pydantic  # registers simulate_pydantic factory
 
 class FrenchEnglishTranslation(BaseModel):
     english_text: str

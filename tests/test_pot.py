@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 from conftest import needs_api_key, CI_TEST_MODEL
 from secretagent import config, record
 from secretagent.core import interface, all_factories, _INTERFACES
-from secretagent.implement_core import PoTFactory
+from secretagent.implement.core import PoTFactory
 
 
 @pytest.fixture(autouse=True)

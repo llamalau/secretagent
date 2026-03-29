@@ -10,7 +10,7 @@ import sys
 from pydantic import BaseModel
 
 from secretagent.core import interface, implement_via
-import secretagent.implement_pydantic  # noqa: F401 (registers simulate_pydantic factory)
+import secretagent.implement.pydantic  # noqa: F401 (registers simulate_pydantic factory)
 
 DEFAULT_MODEL = 'claude-haiku-4-5-20251001'
 

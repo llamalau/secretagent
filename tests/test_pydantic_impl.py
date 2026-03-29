@@ -1,4 +1,4 @@
-"""Tests for secretagent.implement_pydantic."""
+"""Tests for secretagent.implement.pydantic."""
 
 import pytest
 from omegaconf import OmegaConf
@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from conftest import needs_api_key, CI_TEST_MODEL
 from secretagent import config, record
 from secretagent.core import interface, all_factories, _INTERFACES
-from secretagent.implement_pydantic import SimulatePydanticFactory, _summarize_messages
+from secretagent.implement.pydantic import SimulatePydanticFactory, _summarize_messages
 
 
 @pytest.fixture(autouse=True)
