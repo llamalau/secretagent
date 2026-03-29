@@ -1,4 +1,28 @@
-# Upcoming Changes - March 23
+# Changes - March 29
+
+ * Moved sports_understanding, penguins_in_a_table, and
+ geometric_shapes under bbh (for big bench hard, the source of all of
+ these)
+
+ * Separated out the benchmark tests that Joshua started into
+ benchmark/tests, and enabled caching in the orchestrate tests.
+
+ * Extended the cli/results.py with tools for finding pareto-optimal
+   experimental results (see docs/CLI.md)
+
+ * Extended the cli/results.py with a 'plot' tool
+
+ * Generalized expt.py and moved it to cli
+
+ * Collected all the implementations into an implement/ package,
+ so `implement_core` => `implement.core`
+
+ * Moved Lex's optimze.py into an optimize/ package, and generalized
+ the config space that is searched. (Now you can search over configs
+ settings that can't be decomposed into independent dotlists, like 
+   implement_via={'method':direct, 'fn': foobar}
+
+# Moved Changes - March 23
 
 I cleaned up some of the result.py cli methods and fixed a few small
 bugs.  CLI.md now summarizes the implemented cli operations.

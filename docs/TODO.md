@@ -1,7 +1,5 @@
 # Tasks/Known bugs
 
-## cli/results.pi export results/*
-
 ## Cleanups
 
  * subprocess out of optimizer

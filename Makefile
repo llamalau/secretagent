@@ -9,7 +9,7 @@ benchmark_tests:
 	uv run pytest benchmarks/tests/ -v	
 
 lint:
-	uv run ruff check src benchmarks
+	uv run ruff check src 
 
 typehints:
 	time uv run mypy src --ignore-missing-imports

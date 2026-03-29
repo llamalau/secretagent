@@ -12,6 +12,7 @@ dependencies = [
     "cachier>=4.1.0",
     "datasets>=4.8.3",
     "litellm>=1.81.15",
+    "matplotlib>=3.10.8",
     "omegaconf>=2.3.0",
     "pandas>=3.0.1",
     "pydantic-ai>=1.63.0",
