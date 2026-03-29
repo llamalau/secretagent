@@ -33,6 +33,24 @@ class Pipeline:
         Wraps the code body in the entry_signature to create a proper
         function, then exec's it in a namespace containing the ptools.
         """
+        # Normalize indentation: LLMs sometimes return code where the
+        # first line has no indent but subsequent lines do.  dedent only
+        # strips *common* whitespace, so it won't help in that case.
+        # Fix by detecting the indent of the second non-blank line and
+        # prepending it to the first line so dedent works correctly.
+        lines = code.splitlines()
+        if len(lines) > 1:
+            # Find indent of first non-blank line after the first
+            for line in lines[1:]:
+                if line.strip():
+                    second_indent = len(line) - len(line.lstrip())
+                    break
+            else:
+                second_indent = 0
+            first_indent = len(lines[0]) - len(lines[0].lstrip())
+            if second_indent > first_indent:
+                lines[0] = ' ' * second_indent + lines[0].lstrip()
+                code = '\n'.join(lines)
         indented_body = textwrap.indent(textwrap.dedent(code), '    ')
         func_src = f'{entry_signature}\n{indented_body}'
 
@@ -49,7 +67,7 @@ class Pipeline:
     @property
     def source(self) -> str:
         """Full source code of the generated function."""
-        indented_body = textwrap.indent(self.code, '    ')
+        indented_body = textwrap.indent(textwrap.dedent(self.code), '    ')
         return f'{self.entry_signature}\n{indented_body}'
 
 

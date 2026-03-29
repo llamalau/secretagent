@@ -1,5 +1,13 @@
 # Tasks/Known bugs
 
+## Cleanups
+
+ * move expt.py into cli and take subprocess out of optimizer
+ * create bbh benchmarks with subtasks
+ * create implementation subdirectory
+ * organize tests into core and benchmark tests
+   * integration tests seem very slow! maybe it's just the first time though?
+
 ## Core issues
 
  * non-primitive types don't work with Simulate

@@ -15,7 +15,7 @@ Usage::
 import typer
 import yaml
 
-from secretagent.optimize import SearchSpace, GridSearchRunner
+from secretagent.optimize import ConfigSpace, GridSearchRunner
 
 app = typer.Typer()
 
@@ -43,11 +43,12 @@ def sweep(
     with open(space_file) as f:
         space_dict = yaml.safe_load(f)
 
-    # Support both top-level dict and nested under 'search_space' key
-    if 'search_space' in space_dict:
-        space_dict = space_dict['search_space']
+    # Support both top-level dict and nested under 'variants' key
+    if 'variants' not in space_dict:
+        # Treat the whole file as the variants dict
+        space_dict = {'variants': space_dict}
 
-    space = SearchSpace(space_dict)
+    space = ConfigSpace(**space_dict)
 
     runner = GridSearchRunner(
         command=command,
@@ -76,7 +77,7 @@ def sweep(
     best = df.iloc[0] if not df.empty else None
     if best is not None and best.get('accuracy') is not None:
         print(f'\nBest: {best["expt_name"]} — {best["accuracy"]:.1%}')
-        for k in space.keys:
+        for k in space.variants.keys():
             print(f'  {k} = {best.get(k, "?")}')
 
 

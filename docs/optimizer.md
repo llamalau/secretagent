@@ -15,7 +15,7 @@ evaluated as a subprocess to ensure clean state.
               └─────────┬────────────────┘
                         │
               ┌─────────▼────────────────┐
-              │  SearchSpace              │
+              │  ConfigSpace              │
               │  Generates all combos     │
               │  via itertools.product    │
               └─────────┬────────────────┘
@@ -46,7 +46,7 @@ reset in-process.
 
 ```yaml
 # sweep_space.yaml
-search_space:
+variants:
   evaluate.entry_point:
     - answer_question
     - answer_question_workflow
@@ -90,9 +90,9 @@ print(df.sort_values('accuracy', ascending=False))
 ## Programmatic Usage
 
 ```python
-from secretagent.optimize import SearchSpace, GridSearchRunner
+from secretagent.optimize import ConfigSpace, GridSearchRunner
 
-space = SearchSpace({
+space = ConfigSpace(variants={
     'llm.thinking': [True, False],
     'ptools.answer_question.method': ['simulate', 'direct'],
 })
@@ -151,8 +151,8 @@ uv run -m secretagent.cli.optimize summary SWEEP_RESULTS.csv [--top-n N]
 The YAML file can use either format:
 
 ```yaml
-# Flat format
-search_space:
+# Standard format with variants key
+variants:
   key1:
     - value1
     - value2
@@ -162,7 +162,7 @@ search_space:
 ```
 
 ```yaml
-# Also valid: top-level keys (without search_space wrapper)
+# Also valid: top-level keys (without variants wrapper)
 key1:
   - value1
   - value2
@@ -219,7 +219,7 @@ MedCalc, RuleArena) satisfy these requirements.
 
 ```yaml
 # benchmarks/musr/sweep_murder.yaml
-search_space:
+variants:
   evaluate.entry_point:
     - answer_question
     - answer_question_workflow
@@ -257,7 +257,10 @@ Best: sweep_001 — 64.0%
 
 ```
 src/secretagent/
-    optimize.py              # SearchSpace, GridSearchRunner
+    optimize/
+        __init__.py          # re-exports ConfigSpace, GridSearchRunner
+        config_space.py      # ConfigSpace (Pydantic model)
+        grid_search.py       # GridSearchRunner
     cli/
         optimize.py          # CLI (sweep, summary)
 ```

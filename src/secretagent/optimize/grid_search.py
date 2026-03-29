@@ -4,11 +4,11 @@ Searches over a discrete space of config overrides, running each
 configuration as a subprocess to ensure clean state, then collects
 and ranks results.
 
-Usage::
+Usage:
 
-    from secretagent.optimize import SearchSpace, GridSearchRunner
+    from secretagent.optimize import ConfigSpace, GridSearchRunner
 
-    space = SearchSpace({
+    space = ConfigSpace(variants={
         'llm.thinking': [True, False],
         'ptools.answer_question.method': ['simulate', 'direct'],
     })
@@ -24,40 +24,27 @@ Usage::
     print(summary.sort_values('accuracy', ascending=False))
 """
 
-import itertools
-import math
 import os
 import shlex
 import subprocess
 import time
 from pathlib import Path
-from typing import Iterator
 
 import pandas as pd
 
+from secretagent.optimize.config_space import ConfigSpace
 
-class SearchSpace:
-    """A discrete grid of config overrides.
 
-    Each key is a dotlist config key, each value is a list of
-    alternatives to try.
-    """
-
-    def __init__(self, space: dict[str, list]):
-        self.keys = list(space.keys())
-        self.values = [list(v) for v in space.values()]
-
-    def configs(self) -> Iterator[list[str]]:
-        """Yield dotlist overrides for each point in the grid."""
-        for combo in itertools.product(*self.values):
-            yield [f"{k}={v}" for k, v in zip(self.keys, combo)]
-
-    def __len__(self) -> int:
-        return math.prod(len(v) for v in self.values)
-
-    def __repr__(self) -> str:
-        dims = [f'{k}({len(v)})' for k, v in zip(self.keys, self.values)]
-        return f'SearchSpace({" × ".join(dims)} = {len(self)} configs)'
+def _flatten_dict(d: dict, prefix: str = '') -> list[str]:
+    """Flatten a nested dict into dotlist strings like 'a.b=value'."""
+    items = []
+    for k, v in d.items():
+        key = f'{prefix}{k}' if not prefix else f'{prefix}.{k}'
+        if isinstance(v, dict):
+            items.extend(_flatten_dict(v, key))
+        else:
+            items.append(f'{key}={v}')
+    return items
 
 
 class GridSearchRunner:
@@ -66,7 +53,7 @@ class GridSearchRunner:
     def __init__(
         self,
         command: list[str] | str,
-        space: SearchSpace,
+        space: ConfigSpace,
         base_dotlist: list[str] | None = None,
         expt_prefix: str = 'sweep',
         cwd: str | Path | None = None,
@@ -84,9 +71,13 @@ class GridSearchRunner:
         self.metric = metric
         self.results: list[dict] = []
 
-    def run_single(self, config_idx: int, dotlist: list[str]) -> dict:
+    def _space_size(self) -> int:
+        return len(list(self.space))
+
+    def run_single(self, config_idx: int, config_delta: dict) -> dict:
         """Run one config point via subprocess. Returns metrics dict."""
         expt_name = f'{self.expt_prefix}_{config_idx:03d}'
+        dotlist = _flatten_dict(config_delta)
         cmd = (
             self.command
             + self.base_dotlist
@@ -94,13 +85,14 @@ class GridSearchRunner:
             + [f'evaluate.expt_name={expt_name}']
         )
 
-        # Parse config dimensions from dotlist
+        # Parse config dimensions from dotlist for reporting
         config_dims = {}
         for item in dotlist:
             k, v = item.split('=', 1)
             config_dims[k] = v
 
-        print(f'[{config_idx}/{len(self.space)}] {expt_name}: {config_dims}')
+        space_size = self._space_size()
+        print(f'[{config_idx}/{space_size}] {expt_name}: {config_dims}')
 
         start = time.time()
         try:
@@ -199,8 +191,8 @@ class GridSearchRunner:
         print(f'Base overrides: {self.base_dotlist}')
         print()
 
-        for idx, dotlist in enumerate(self.space.configs()):
-            self.run_single(idx, dotlist)
+        for idx, config_delta in enumerate(self.space):
+            self.run_single(idx, config_delta)
 
         return self.summary()
 
