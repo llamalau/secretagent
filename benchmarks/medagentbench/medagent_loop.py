@@ -161,8 +161,10 @@ def codeact_loop(instruction: str, context: str) -> list:
     }
     executor.static_tools = {**BASE_PYTHON_TOOLS, 'final_answer': lambda x: x}
 
+    funcs = json.loads((_TEMPLATE_DIR.parent / 'data' / 'funcs_v1.json').read_text())
     prompt = _load_template('codeact.txt').format(
-        api_base=fhir_base, context=_extract_task_context(context), question=instruction)
+        api_base=fhir_base, functions=json.dumps(funcs),
+        context=_extract_task_context(context), question=instruction)
     messages = [{"role": "user", "content": prompt}]
     total_stats = dict(input_tokens=0, output_tokens=0, latency=0.0, cost=0.0)
 
