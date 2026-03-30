@@ -4,7 +4,7 @@ from omegaconf import OmegaConf
 from secretagent import config
 from secretagent.core import interface, _FACTORIES
 from secretagent.implement.learnedcode import (
-    _find_learned_path, _build_backoff_impl, LearnedFunctionFactory,
+    _find_learned_path, _build_backoff_impl, LearnedCodeFactory,
 )
 
 
@@ -75,7 +75,7 @@ def test_build_fn_loads_function(tmp_path):
     config.configure(learn=dict(train_dir=str(tmp_path)))
     _write_learned_py(tmp_path / '20260101.120000.my_func__rote', 'my_func', 'return "hello"')
     iface = _make_interface('my_func')
-    factory = LearnedFunctionFactory()
+    factory = LearnedCodeFactory()
     fn = factory.build_fn(iface, learner='rote')
     assert fn('anything') == 'hello'
 
@@ -84,7 +84,7 @@ def test_build_fn_missing_function_name(tmp_path):
     config.configure(learn=dict(train_dir=str(tmp_path)))
     _write_learned_py(tmp_path / '20260101.120000.my_func__rote', 'wrong_name', 'return "hello"')
     iface = _make_interface('my_func')
-    factory = LearnedFunctionFactory()
+    factory = LearnedCodeFactory()
     with pytest.raises(AttributeError, match='my_func'):
         factory.build_fn(iface, learner='rote')
 
@@ -93,7 +93,7 @@ def test_implement_via_learned(tmp_path):
     config.configure(learn=dict(train_dir=str(tmp_path)))
     _write_learned_py(tmp_path / '20260101.120000.my_func2__rote', 'my_func2', 'return "impl"')
     iface = _make_interface('my_func2')
-    iface.implement_via('learned', learner='rote')
+    iface.implement_via('learned_code', learner='rote')
     assert iface('x') == 'impl'
 
 
@@ -106,7 +106,7 @@ def test_backoff_returns_learned_when_not_none(tmp_path):
     _write_learned_py(workdir, 'my_func3', 'return "learned"')
     _write_source_configs(workdir, 'my_func3', {'method': 'direct'})
     iface = _make_interface('my_func3')
-    factory = LearnedFunctionFactory()
+    factory = LearnedCodeFactory()
     fn = factory.build_fn(iface, learner='rote', backoff=True)
     assert fn('x') == 'learned'
 
@@ -117,7 +117,7 @@ def test_backoff_falls_back_when_none(tmp_path):
     _write_learned_py(workdir, 'my_func4', 'return None')
     _write_source_configs(workdir, 'my_func4', {'method': 'direct'})
     iface = _make_interface('my_func4')
-    factory = LearnedFunctionFactory()
+    factory = LearnedCodeFactory()
     fn = factory.build_fn(iface, learner='rote', backoff=True)
     # direct factory uses the stub body, which returns None (via ...)
     # so the backoff also returns None — but it exercises the path
@@ -134,7 +134,7 @@ def test_backoff_uses_direct_fn(tmp_path):
     _write_source_configs(workdir, 'my_func5',
                           {'method': 'direct', 'fn': 'json.loads'})
     iface = _make_interface('my_func5')
-    factory = LearnedFunctionFactory()
+    factory = LearnedCodeFactory()
     fn = factory.build_fn(iface, learner='rote', backoff=True)
     assert fn('{"a": 1}') == {'a': 1}
 
@@ -147,7 +147,7 @@ def test_backoff_no_fallback_when_learned_has_answer(tmp_path):
     _write_source_configs(workdir, 'my_func6',
                           {'method': 'direct', 'fn': 'json.loads'})
     iface = _make_interface('my_func6')
-    factory = LearnedFunctionFactory()
+    factory = LearnedCodeFactory()
     fn = factory.build_fn(iface, learner='rote', backoff=True)
     # Should return learned result, not json.loads result
     assert fn('hello') == 'got_it'

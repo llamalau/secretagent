@@ -40,8 +40,6 @@ import typer
 
 from secretagent import config, record
 from secretagent.core import implement_via_config
-import secretagent.implement.pydantic  # noqa: F401 (force registration)
-import secretagent.implement.learnedcode  # noqa: F401 (registers learned factory)
 from secretagent.dataset import Dataset, Case
 from secretagent.evaluate import Evaluator
 

@@ -62,15 +62,15 @@ def _load_learned(path):
     return mod
 
 
-# --- fit() / save_code() tests ---
+# --- fit() / save_implementation() tests ---
 
 
-def test_save_code_creates_file(tmp_path):
+def test_save_implementation_creates_file(tmp_path):
     learner = _make_learner(tmp_path, 'my_func', [(['a'], None, 'x')])
     learner.fit()
-    outpath = learner.save_code()
+    outpath = learner.save_implementation()
     assert outpath.exists()
-    assert outpath.name == 'learned.py'
+    assert outpath.name == 'implementation.yaml'
 
 
 def test_returns_most_common(tmp_path):
@@ -80,14 +80,14 @@ def test_returns_most_common(tmp_path):
         (['hello'], None, 'earth'),
     ])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.my_func('hello') == 'world'
 
 
 def test_returns_none_for_unseen(tmp_path):
     learner = _make_learner(tmp_path, 'my_func', [(['a'], None, 'x')])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.my_func('unseen') is None
 
 
@@ -97,7 +97,7 @@ def test_multiple_inputs(tmp_path):
         (['b'], None, '2'),
     ])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.f('a') == '1'
     assert mod.f('b') == '2'
 
@@ -107,7 +107,7 @@ def test_with_kwargs(tmp_path):
         ([], {'x': 1, 'y': 2}, 'ok'),
     ])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.f(x=1, y=2) == 'ok'
     assert mod.f(x=1, y=99) is None
 
@@ -117,14 +117,14 @@ def test_with_mixed_args_and_kwargs(tmp_path):
         (['pos'], {'key': 'val'}, 'result'),
     ])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.f('pos', key='val') == 'result'
 
 
 def test_function_named_after_interface(tmp_path):
     learner = _make_learner(tmp_path, 'classify', [(['a'], None, 'x')])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert hasattr(mod, 'classify')
     assert mod.classify('a') == 'x'
 
@@ -132,14 +132,14 @@ def test_function_named_after_interface(tmp_path):
 def test_preserves_list_output(tmp_path):
     learner = _make_learner(tmp_path, 'f', [(['a'], None, ['x', 'y'])])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.f('a') == ['x', 'y']
 
 
 def test_preserves_dict_output(tmp_path):
     learner = _make_learner(tmp_path, 'f', [(['a'], None, {'k': 'v'})])
     learner.fit()
-    mod = _load_learned(learner.save_code())
+    mod = _load_learned(learner.save_implementation().parent / 'learned.py')
     assert mod.f('a') == {'k': 'v'}
 
 

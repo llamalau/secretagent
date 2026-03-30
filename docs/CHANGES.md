@@ -1,26 +1,73 @@
-# Changes - March 29
+# Changes - March 29-30
 
- * Moved sports_understanding, penguins_in_a_table, and
- geometric_shapes under bbh (for big bench hard, the source of all of
- these)
+## To help get organized results 
 
- * Separated out the benchmark tests that Joshua started into
+So it's easier to see what people are doing when updating code code,
+and so it's easier to reproduce experiments:
+
+ * Changed .gitignore to encourage people to **check in results/ and
+   llm_cache** directories.
+
+ * Extended the cli/results.py with an 'export' tool to copy results
+ into benchmark/results. **Please export the interesting subset of your
+ current results***.  Use these `expt_name`s
+  * `structured_baseline`
+  * `unstructured_baseline`
+  * `workflow`
+  * `pot`
+  * `react`
+
+If you're not putting subtasks in subdirectories, you should use the
+`--as RELATIVE/PATH` option to file your results - see the CLI.md
+file.
+
+ * Generalized expt.py and moved it to cli - **Everyone should be able
+ to use this now, not specialized ones.**  Discuss with me if you
+ can't!
+
+ * To speed up testing, separated out the benchmark tests that
  benchmark/tests, and enabled caching in the orchestrate tests.
+ **Thanks to Joshua** for starting out with the benchmark tests, I
+ encourage us all to follow!
 
- * Extended the cli/results.py with tools for finding pareto-optimal
+
+## Other extensions
+
+ * Extended the results.py with options for finding pareto-optimal
    experimental results (see docs/CLI.md)
 
- * Extended the cli/results.py with a 'plot' tool
+ * Extended the cli/results.py with a 'plot' tool to visualize
+   cost/performance tradeoffs
 
- * Generalized expt.py and moved it to cli
+## Misc cleanups
 
- * Collected all the implementations into an implement/ package,
- so `implement_core` => `implement.core`
+ * Moved `sports_understanding`, `penguins_in_a_table`, and
+ `geometric_shapes` under bbh (bbh="BIG Bench Hard" the source of all
+ of these)
+
+ * Collected all the implementations into an implement/ package, so
+ `implement_core` => `implement.core`, and also moved
+ `learn/implement_learn.py` => `implement/learnedcode.py`. As part of
+ this you no longer need to import specific `implement_*` routines to
+ populate the factory registry.
 
  * Moved Lex's optimze.py into an optimize/ package, and generalized
  the config space that is searched. (Now you can search over configs
- settings that can't be decomposed into independent dotlists, like 
-   implement_via={'method':direct, 'fn': foobar}
+ settings that can't be decomposed into independent dotlists, like
+ implement_via={'method':direct, 'fn': foobar}
+
+
+### Learning-related cleanups
+
+ * Renamed the learned factory from `'learned'` to `'learned_code'`
+
+ * Renamed CLI flag `--train-dir` to `--learned-dir`
+
+ * Generalized `learn.base.Learner` to output configurations for a
+ learned implementation, to cover Lex's PTP learner (and also to cover
+ distillation via ICL)
+
+ * Added `learn/HOWTO.md` for learner contributors
 
 # Moved Changes - March 23
 

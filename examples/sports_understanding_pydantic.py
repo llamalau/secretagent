@@ -4,7 +4,6 @@ BBH.
 
 from secretagent import config, record
 from secretagent.core import interface, implement_via
-import secretagent.implement.pydantic  # noqa: F401 (registers simulate_pydantic factory)
 
 from pydantic import BaseModel
 import pprint

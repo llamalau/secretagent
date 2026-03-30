@@ -8,7 +8,6 @@ makes more use of structured inputs/outputs.
 
 from secretagent import config, record
 from secretagent.core import implement_via
-import secretagent.implement.pydantic  # noqa: F401 (registers simulate_pydantic factory)
 
 from pydantic import BaseModel
 import pprint

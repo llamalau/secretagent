@@ -27,8 +27,6 @@ import typer
 
 from secretagent import record, config
 from secretagent.core import implement_via_config, Interface
-import secretagent.implement.pydantic  # noqa: F401 (registers simulate_pydantic factory)
-import secretagent.implement.learnedcode  # noqa: F401 (registers learned factory)
 from secretagent.dataset import Dataset
 from secretagent.evaluate import ExactMatchEvaluator, Evaluator
 from secretagent.implement.core import resolve_dotted

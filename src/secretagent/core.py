@@ -169,6 +169,5 @@ class Implementation(BaseModel):
                 factory_kwargs=builder_kwargs)
 
 # auto-register built-in factories
-import secretagent.implement.core  # noqa: E402, F401
+import secretagent.implement  # noqa: E402, F401
 import secretagent.orchestrate  # noqa: E402, F401
-import secretagent.implement.selfconsistency  # noqa: E402, F401
