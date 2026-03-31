@@ -53,6 +53,7 @@ if __name__ == '__main__':
     translate.implement_via(
         'prompt_llm',
         prompt_template_str='Translate $english_sentence to French - just return one sentence.',
+        answer_pattern=None,
         llm={'model': model})
     print('Custom prompt', translate("What's for lunch today?"))
     
