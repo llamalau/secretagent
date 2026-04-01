@@ -60,7 +60,7 @@ def extract_airline_params(query: str) -> dict:
 
 
 @interface
-def extract_tax_params(query: str) -> str:
+def extract_tax_params(query: str) -> dict:
     """Extract taxpayer parameters from filled IRS forms.
 
     The input is a set of IRS forms with dollar values already filled in and
@@ -515,15 +515,7 @@ def l1_extract_workflow(
         return float(_airline_calc_fn(params))
 
     if domain == "tax":
-        raw = extract_tax_params(forms_text)
-        # Return type is str to avoid ast.literal_eval failures on JSON
-        # (true/false, trailing commas, // comments). Parse with json.loads
-        # after stripping JS-style comments.
-        import re as _re
-        cleaned = _re.sub(r'//.*', '', raw)
-        params = json.loads(cleaned)
-        if not isinstance(params, dict):
-            raise TypeError(f"extract_tax_params returned {type(params).__name__}, expected dict")
+        params = extract_tax_params(forms_text)
         return _tax_calc_fn(params)
 
     if domain == "nba":
