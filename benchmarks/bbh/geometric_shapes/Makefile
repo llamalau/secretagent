@@ -9,25 +9,7 @@ INTERFACE = --interface ptools.identify_shape
 workflow:
 	$(EXPT) run $(INTERFACE) evaluate.expt_name=workflow \
 	  ptools.identify_shape.method=direct \
-	  ptools.identify_shape.fn=ptools.geometric_shapes_workflow dataset.n=3
-
-# quick test of the workflow on a single example
-quick-test:
-	$(EXPT) quick-test $(INTERFACE) \
-	  ptools.identify_shape.method=direct \
 	  ptools.identify_shape.fn=ptools.geometric_shapes_workflow
-
-# program of thoughts
-pot:
-	$(EXPT) run $(INTERFACE) evaluate.expt_name=pot \
-	  ptools.identify_shape.method=program_of_thought \
-	  "ptools.identify_shape.tools=[ptools.extract_path,ptools.extract_options,ptools.explain_path,ptools.decompose_path,ptools.summarize_decomposed_path,ptools.summary_matches_option,ptools.compute_length_clusters,ptools.relate_length_clusters_to_option,ptools.length_clusters_match_option,ptools.is_unique_answer]"
-
-# ReAct using simulate_pydantic (which runs ReAct if there are tools)
-react:
-	$(EXPT) run $(INTERFACE) evaluate.expt_name=react \
-	  ptools.identify_shape.method=simulate_pydantic \
-	  "ptools.identify_shape.tools=[ptools.extract_path,ptools.extract_options,ptools.explain_path,ptools.decompose_path,ptools.summarize_decomposed_path,ptools.summary_matches_option,ptools.compute_length_clusters,ptools.relate_length_clusters_to_option,ptools.length_clusters_match_option,ptools.is_unique_answer]"
 
 # zero-shot structured queries
 zeroshot_structured:
@@ -39,6 +21,12 @@ zeroshot_unstructured:
 	$(EXPT) run $(INTERFACE) evaluate.expt_name=zeroshot_unstructured \
 	  ptools.identify_shape.method=direct \
 	  ptools.identify_shape.fn=ptools.zeroshot_unstructured_workflow
+
+# quick test on a single example
+quick-test:
+	$(EXPT) quick-test $(INTERFACE) --example valid.013 \
+	  ptools.identify_shape.method=direct \
+	  ptools.identify_shape.fn=ptools.geometric_shapes_workflow
 
 #
 # View results of past experiments
