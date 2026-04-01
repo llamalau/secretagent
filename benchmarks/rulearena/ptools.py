@@ -60,22 +60,120 @@ def extract_airline_params(query: str) -> dict:
 
 
 @interface
-def extract_tax_params(query: str) -> dict:
+def extract_tax_params(query: str) -> str:
     """Extract taxpayer parameters from filled IRS forms.
 
-    The input is a set of IRS forms with dollar values filled in and
-    computed fields marked [__]. Extract the INPUT values from the forms.
+    The input is a set of IRS forms with dollar values already filled in and
+    computed fields marked [__]. Extract the INPUT values that appear on the forms.
 
-    Return a JSON object with TaxPayer fields including: name, age, spouse_age,
-    filing_status, blind, spouse_blind, itemized, self_employed,
-    has_student_loans_or_education_expenses, num_qualifying_children,
-    num_other_dependents, wage_tip_compensation, taxable_interest,
-    qualified_dividends, ordinary_dividends, federal_income_tax_withheld,
-    and all Schedule A/C/1/2/3 fields (set to 0.0 if schedule not present).
+    Return a JSON object with these fields:
+    {
+        // --- Basic info ---
+        "name": "<taxpayer name>",
+        "age": <int>,
+        "spouse_age": <int>,
+        "filing_status": "<single|married filing jointly|married filing separately|head of household|qualifying surviving spouse>",
+        "blind": <bool>,
+        "spouse_blind": <bool>,
+        "itemized": <bool>,
+        "self_employed": <bool>,
+        "has_student_loans_or_education_expenses": <bool>,
+        "num_qualifying_children": <int>,
+        "num_other_dependents": <int>,
+
+        // --- Form 1040 income lines ---
+        "wage_tip_compensation": <float>,
+        "household_employee_wage": <float>,
+        "unreported_tip": <float>,
+        "nontaxable_combat_pay": <float>,
+        "tax_exempt_interest": <float>,
+        "taxable_interest": <float>,
+        "qualified_dividends": <float>,
+        "ordinary_dividends": <float>,
+        "ira_distributions": <float>,
+        "taxable_ira_distributions": <float>,
+        "all_pensions": <float>,
+        "taxable_pensions": <float>,
+        "social_security_benefits": <float>,
+        "taxable_social_security_benefits": <float>,
+        "qualified_business_income": <float>,  // Line 13. Read 'Deduction from Form 8995 or Form 8995-A' value. Do NOT read [__] as zero.
+        "federal_income_tax_withheld": <float>,
+        "earned_income_credit": <float>,
+
+        // --- Schedule 1 ---
+        "taxable_state_refunds": <float>,
+        "alimony_income": <float>,
+        "sale_of_business": <float>,  // Line 4 'Other gains or (losses)'
+        "rental_real_estate_sch1": <float>,
+        "farm_income": <float>,
+        "unemployment_compensation": <float>,
+        "other_income": <float>,
+        "educator_expenses": <float>,
+        "hsa_deduction": <float>,
+        "ira_deduction": <float>,
+        "student_loan_interest_deduction": <float>,
+        "other_adjustments": <float>,
+
+        // --- Schedule 2 ---
+        "amt_f6251": <float>,
+        "credit_repayment": <float>,
+        "other_additional_taxes": <float>,
+
+        // --- Schedule 3 ---
+        "foreign_tax_credit": <float>,
+        "dependent_care": <float>,
+        "retirement_savings": <float>,
+        "elderly_disabled_credits": <float>,
+        "plug_in_motor_vehicle": <float>,
+        "alt_motor_vehicle": <float>,
+
+        // --- Schedule A (only when itemized=true) ---
+        "medical_dental_expenses": <float>,            // Line 1
+        "state_local_income_or_sales_tax": <float>,    // Line 5a
+        "state_local_real_estate_tax": <float>,         // Line 5b
+        "state_local_personal_property_tax": <float>,   // Line 5c
+        "other_taxes_paid": <float>,                    // Line 6
+        "home_mortgage_interest_and_points": <float>,   // Line 8a
+        "home_mortgage_interest_unreported": <float>,   // Line 8b
+        "home_mortgage_points_unreported": <float>,     // Line 8c
+        "investment_interest": <float>,                 // Line 9
+        "charity_cash": <float>,                        // Line 11
+        "charity_non_cash": <float>,                    // Line 12
+        "casualty_and_theft_loss": <float>,             // Line 15
+        "other_itemized_deductions": <float>,           // Line 16
+
+        // --- Schedule C (only when self_employed=true) ---
+        "gross_receipts": <float>,            // Line 1
+        "returns_and_allowances": <float>,    // Line 2
+        "cost_of_goods_sold": <float>,        // Line 4
+        "other_inc_sched_c": <float>,         // Line 6
+        "total_expenses": <float>,            // Line 28
+        "expenses_of_home": <float>,          // Line 30
+        "total_social_security_wages": <float>, // Schedule SE Line 8a (or W-2 boxes 3+7)
+
+        // --- Form 8863 education (only when has_student_loans_or_education_expenses=true) ---
+        "student_list": [   // One entry per student in Part III
+            {
+                "qualified_student_expenses": <int>,    // Part III Line 21
+                "f8863_part_iii_23": "<Yes or No>",     // Line 23
+                "f8863_part_iii_24": "<Yes or No>",     // Line 24
+                "f8863_part_iii_25": "<Yes or No>",     // Line 25
+                "f8863_part_iii_26": "<Yes or No>"      // Line 26
+            }
+        ]
+    }
+
+    Extraction rules:
+    - Dollar values on forms appear as "$1,234" -- extract as numeric (1234.0).
+    - Fields for schedules not present in the forms should be 0, 0.0, or [].
+    - self_employed = true if Schedule C is present.
+    - has_student_loans_or_education_expenses = true if Form 8863 is present.
+    - itemized = true if Schedule A is present.
+    - student_list = [] if Form 8863 is not present.
 
     Examples:
     >>> extract_tax_params("Name: Jane, Age: 35, Filing Status: single, Line 1a W-2: $50,000")
-    {"name": "Jane", "age": 35, "filing_status": "single", "wage_tip_compensation": 50000.0, ...}
+    {"name": "Jane", "age": 35, "filing_status": "single", "wage_tip_compensation": 50000.0, "blind": false, "spouse_blind": false, "itemized": false, "self_employed": false, "has_student_loans_or_education_expenses": false, "num_qualifying_children": 0, "num_other_dependents": 0, "spouse_age": 0, "household_employee_wage": 0.0, "unreported_tip": 0.0, "nontaxable_combat_pay": 0.0, "tax_exempt_interest": 0.0, "taxable_interest": 0.0, "qualified_dividends": 0.0, "ordinary_dividends": 0.0, "ira_distributions": 0.0, "taxable_ira_distributions": 0.0, "all_pensions": 0.0, "taxable_pensions": 0.0, "social_security_benefits": 0.0, "taxable_social_security_benefits": 0.0, "qualified_business_income": 0.0, "federal_income_tax_withheld": 0.0, "earned_income_credit": 0.0, "taxable_state_refunds": 0.0, "alimony_income": 0.0, "sale_of_business": 0.0, "rental_real_estate_sch1": 0.0, "farm_income": 0.0, "unemployment_compensation": 0.0, "other_income": 0.0, "educator_expenses": 0.0, "hsa_deduction": 0.0, "ira_deduction": 0.0, "student_loan_interest_deduction": 0.0, "other_adjustments": 0.0, "amt_f6251": 0.0, "credit_repayment": 0.0, "other_additional_taxes": 0.0, "foreign_tax_credit": 0.0, "dependent_care": 0.0, "retirement_savings": 0.0, "elderly_disabled_credits": 0.0, "plug_in_motor_vehicle": 0.0, "alt_motor_vehicle": 0.0, "student_list": []}
     """
 
 
@@ -417,7 +515,15 @@ def l1_extract_workflow(
         return float(_airline_calc_fn(params))
 
     if domain == "tax":
-        params = extract_tax_params(forms_text)
+        raw = extract_tax_params(forms_text)
+        # Return type is str to avoid ast.literal_eval failures on JSON
+        # (true/false, trailing commas, // comments). Parse with json.loads
+        # after stripping JS-style comments.
+        import re as _re
+        cleaned = _re.sub(r'//.*', '', raw)
+        params = json.loads(cleaned)
+        if not isinstance(params, dict):
+            raise TypeError(f"extract_tax_params returned {type(params).__name__}, expected dict")
         return _tax_calc_fn(params)
 
     if domain == "nba":
