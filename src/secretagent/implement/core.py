@@ -10,7 +10,7 @@ import re
 
 from string import Template
 from textwrap import dedent
-from smolagents.local_python_executor import LocalPythonExecutor
+from smolagents.local_python_executor import LocalPythonExecutor, BASE_PYTHON_TOOLS
 from typing import Any, Callable
 import types
 
@@ -248,16 +248,13 @@ class PoTFactory(Implementation.Factory):
         # Put tool functions in custom_tools directly, since
         # LocalPythonExecutor.__call__ passes custom_tools (not
         # additional_functions) to evaluate_python_code.
-        # Inject safe Python builtins that smolagents' sandbox blocks by default (issue #7)
-        SAFE_BUILTINS = {
-            'float': float, 'int': int, 'round': round, 'abs': abs,
-            'str': str, 'bool': bool, 'min': min, 'max': max, 'sum': sum,
-        }
-        tool_functions.update(SAFE_BUILTINS)
         python_executor.custom_tools = tool_functions
-        # Provide final_answer in static_tools so the LLM can
-        # return a value via final_answer(result).
+        # Merge smolagents' BASE_PYTHON_TOOLS (len, list, dict, sorted,
+        # etc.) into static_tools so generated code can use standard
+        # builtins. Previously these were blocked because static_tools
+        # was overwritten with only final_answer (issue #7).
         python_executor.static_tools = {
+            **BASE_PYTHON_TOOLS,
             "final_answer": lambda x: x,
         }
         # collect interfaces for tool stubs in the prompt
