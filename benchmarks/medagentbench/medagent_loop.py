@@ -15,9 +15,18 @@ from litellm import completion, completion_cost
 from secretagent import config, record
 from secretagent.llm_util import echo_boxed
 
+import threading
+
 import fhir_tools
 
 _TEMPLATE_DIR = Path(__file__).parent / 'prompt_templates'
+
+# Thread-local storage for the last successfully executed code (used by bank)
+_local = threading.local()
+
+def get_last_code():
+    """Return the code from the last successful codeact execution."""
+    return getattr(_local, 'last_code', None)
 
 
 def _load_template(name):
@@ -185,6 +194,7 @@ def codeact_loop(instruction: str, context: str) -> list:
             answer = result.output
             if not isinstance(answer, list):
                 answer = [answer]
+            _local.last_code = code
             record.record(func='solve_medical_task', args=(instruction, context),
                           kw={}, output=answer, stats=total_stats,
                           step_info={'passes': attempt + 1, 'code': code})
